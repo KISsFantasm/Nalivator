@@ -1,0 +1,197 @@
+body {
+    font-family: Arial;
+    font-size: 3.5vh; 
+    background-color: #959bbf; 
+    -moz-user-select: none; 
+    -khtml-user-select: none; 
+    -webkit-user-select: none; 
+    user-select: none;
+    text-align: center;
+}
+
+input{
+    padding-left: 2vw; 
+    border-radius: 1em; 
+    width:inherit; 
+    font-size: 3.5vh;
+    width: 40vw;
+}
+
+select{
+    width:inherit; 
+    padding-left: 2vw; 
+    border-radius: 1em; 
+    height:5vh; 
+    font-size: 3vh;
+}
+
+table{width: 98vw;}
+tbody{width: inherit;}
+tr{padding-top: 1vh; width: inherit;}
+
+.hidden{display: none;}
+
+.txtAL{text-align: left; padding-top: 2vh;}
+.inline{display: inline;}
+
+.load{ width: 100vw; height: 100vh; position: absolute; left: 0; top: 0;}
+#load_frame{z-index: 9; opacity: 0.9; background: #d9d9d9;}
+#load_text{z-index: 10; opacity: 1; font-size: 10vh; line-height: 85vh;}
+
+.flexDisplay{
+    display:flex; 
+    justify-content: space-between;
+}
+
+.mainButtons{height:25vh;}
+.mainOptions{height:12vh; text-align: left; padding-left: 4vw;}
+.mainValues{height:15vh;}
+.mainActions{height:30vh;}
+
+.paramWindow{height: 50vh; overflow-y: scroll; overflow-x: hidden; border: 2px solid black;}
+
+button {
+    position: relative; 
+    display: inline-block; 
+    cursor: pointer; 
+    outline: none; 
+    border: 0;
+    vertical-align: middle; 
+    text-decoration: none; 
+    font-size: inherit; 
+    font-family: inherit;
+    width: 43vw;
+    font-size: 3.5vh;
+    color: black;
+    background: #f2f2f2;
+    border: 0.1em solid black; 
+    border-radius: 0.75em; 
+    transition: transform 0.15s; 
+    transform-style: preserve-3d;
+}
+
+button::before { 
+    position: absolute; 
+    content: "";
+    width: 100%; 
+    height: 100%; 
+    top: -1vh; 
+    left: 0; 
+    right: 0; 
+    bottom: 0; 
+    background: #737373; 
+    border-radius: inherit; 
+    box-shadow: 0 0 0 0.1em black; 
+    transform: translate3d(0, 0.5em, -1em); 
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+button:active {background: #80ffbf; transform: translate(0em, 0.25em);}
+button:active::before {transform: translate3d(0, 0.3em, -1em);}
+
+button.active {
+    background: #80ffbf; 
+    transition: transform 0.15s; 
+    transform: translate(0em, 0.25em); 
+    transform-style: preserve-3d;
+}
+
+button.active::before {
+    box-shadow: 0 0 0 0.1em black; 
+    transform: translate3d(0, 0.3em, -1em); 
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+button.active:active {
+    background: #ffcc00; 
+}
+
+button.setting{
+    width: 80vw;
+    margin-top: 8vw;
+    font-size: 4.5vh;
+}
+
+button.actions{
+    font-size: 4.5vh;
+}
+
+.val_div{
+    display: flex;
+    height:6vh; 
+    font-size: 4vh; 
+    margin-top: 1vh; 
+    width:49vw;
+}
+
+.val_img_div{
+    display: none; 
+    text-align: center; 
+    overflow: auto; 
+    width: 10vw; 
+    height: 5vh;
+    display: inline;
+}
+
+.val_img{
+    width: inherit; 
+    height: inherit; 
+    object-fit: contain;
+}
+
+.val_lab{
+    border-radius: 1em;  
+    height: 5vh; 
+    width: 5vw; 
+    left:12vw; 
+    border: 2px solid black; 
+    background-color:#33cccc;
+}
+
+.val{
+    padding-right:1vw; 
+    text-align:right; 
+    border-radius: 1em;  
+    height: 5vh; 
+    width: 34vw; 
+    left:20vw; 
+    border: 2px solid black; 
+    background-color:#ffff99;
+}
+
+.param_val{
+    font-size: 4.5vh;
+    margin-top: 1vh;
+    text-align: left;
+    width: 45vw;
+}
+
+.param_inp{
+    padding-right: 2vw; 
+    background-color: #ffff99; 
+    text-align: right; 
+    border-radius: 1em;
+}
+
+.param_lab{
+    text-align: left;
+    width: 10vw;
+    border-right: 1px solid black;
+}
+
+.param_des{
+    font-size: 3vh;
+    text-align: left;
+    overflow-y: hidden;
+    overflow-x: scroll;
+    white-space: nowrap;
+    width: 50vw;
+}
+
+.param_border{
+    display: flex;
+    height: 8.5vh;
+    width: 98vw;
+    text-align: left;
+    align-items: center;
+}

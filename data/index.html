@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8;"/>
+        <title> PLC_Web </title>
+        <link rel="stylesheet" href="style.css">
+        <script src="script.js"></script>
+    </head>
+    <body>
+        <div class="load" id="load_frame"></div>
+        <div class="load" id="load_text">Loading...</div>
+        <div id="mainW">
+            <table>
+                <tr>
+                    <table class="mainButtons">
+                        <tr>
+                            <td>
+                                <button id="sb1" onpointerdown="mainBAction('startCButton','on')" > Почати <br> Каліб. </button>
+                            </td>
+                            <td>
+                                <button id="sb2" onpointerdown="mainBAction('stopCButton','on')"> Закінчити <br> Каліб. </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="sb3" onpointerdown="mainBAction('startSButton','on')"> Почати <br> Секцію </button>
+                            </td>
+                            <td>
+                                <button id="sb4" onpointerdown="mainBAction('stopSButton','on')"> Закінчити <br> Секцію </button>
+                            </td>
+                        </tr>
+                    </table>
+                </tr>
+                <tr>
+                    <table class="mainOptions">
+                        <tr>
+                            <td>Статус:</td>
+                            <td id="status"></td>
+                        </tr>
+                        <tr class="hidden">
+                            <td>Машина:</td>
+                            <td>
+                                <input id="car_number" oninput="validInput(this, 'car')" onchange="saveCarNumber()" maxlength="10" onfocus="this.select()"  value="">
+                            </td>
+                        </tr>
+                        <tr class="hidden">
+                            <td>Секція:</td>
+                            <td>
+                                <input id="car_section" oninput="validInput(this, 'section', 'number')" onchange="saveCarSection()" maxlength="1" onfocus="this.select()"  value="">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Дозування:</td> 
+                            <td>
+                                <select onchange="saveOption()" id="option">
+                                    <option value="0">До верху</option>
+                                    <option value="1">50 літрів</option>
+                                    <option value="2">100 літрів</option>
+                                    <option value="3">200 літрів</option>
+                                    <option value="4">Тонкий налив</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </tr>
+                <tr>
+                    <div id="current" data-plc=""></div>
+                    <table class="mainValues">
+                        <tr>
+                            <td>
+                                <div class="val_div">
+                                    <div class="val_img_div">
+                                        <canvas id="img_0" class="val_img_div"></canvas>
+                                    </div>
+                                    <div class="val"> 
+                                        <span id="val_0"></span>
+                                        <span> kg </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+        
+                                <div class="val_div">
+                                    <div class="val_img_div">
+                                        <canvas id="img_1" class="val_img_div"></canvas>
+                                    </div>
+                                    <div class="val">
+                                        <span id="val_1"></span>
+                                        <span> kg </span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="val_div">
+                                    <div class="val_img_div">
+                                        <canvas id="img_2" class="val_img_div"></canvas>
+                                    </div>
+                                    <div class="val">
+                                        <span id="val_2"></span>
+                                        <span> kg </span> 
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="val_div">
+                                    <div class="val_img_div">
+                                        <canvas id="img_3" class="val_img_div"></canvas>
+                                    </div>
+                                    <div class="val">
+                                        <span id="val_3"></span>
+                                        <span > kg </span> 
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </tr>
+                <tr>
+                    <table class="mainActions">
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <button class="actions" id="doseB"  onpointerdown="mainBAction('doseButton','on')" > Доза </button>
+                                </td>
+                                <td>
+                                    <button class="actions"  onpointerdown="zeroConfirm();"> Нуль </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <button class="actions" onpointerdown="mainBAction('flowButton','on')" onpointerup="mainBAction('flowButton','off')" onmouseout="mainBAction('flowButton','off')"> Т. н. </button>
+                                </td>
+                                <td>
+                                    <button class="actions" onpointerdown="changeSettingWindow();"> Парам. </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </tr>
+            </table>
+        </div>
+        <div id="settingW" class="hidden">
+            <div>Налаштування</div>
+            <div class="paramWindow">
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_0" class="param_inp">
+                    </div>
+                    <div class="param_lab"> kg </div>
+                    <div class="param_des"> Макс. потік </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_1" class="param_inp">
+                    </div>
+                    <div class="param_lab"> kg </div>
+                    <div class="param_des"> К-сть кг на імп. </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_2" class="param_inp">
+                    </div>
+                    <div class="param_lab"> % </div>
+                    <div class="param_des"> Макс. відкриття клапану </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_3" class="param_inp">
+                    </div>
+                    <div class="param_lab"> % </div>
+                    <div class="param_des"> Відкривання клапану при дозі </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_4" class="param_inp">
+                    </div>
+                    <div class="param_lab"> % </div>
+                    <div class="param_des"> Відкривання клап. при тонкому наливі </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_5" class="param_inp">
+                    </div>
+                    <div class="param_lab"> kg </div>
+                    <div class="param_des"> К-сть кг тонкого наливу при дозі </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_6" class="param_inp">
+                    </div>
+                    <div class="param_lab"> s </div>
+                    <div class="param_des"> 
+                            Час роботи V2 при завершенні роботи <br> *9999 - завжди відкрито
+                    </div>
+                </div>
+                <div class="param_border">
+                    <div class="param_val">
+                        <input onfocus="this.select()" type="number" value="" disabled id="param_7" class="param_inp">
+                    </div>
+                    <div class="param_lab"> s </div>
+                    <div class="param_des"> Час відкриття клапанів при підготовці</div>
+                </div>
+            </div>
+            <div class="txtAL">
+                <div class="txtAL inline">
+                    <input onfocus="this.select()" id="password" oninput="checkPass()" type="password" value="">
+                </div>
+                <div class="txtAL inline">Пароль</div>
+            </div>
+            <table>
+                <tr>
+                    <td>
+                        <div> 
+                            <button onpointerdown="saveParam()" class="setting"> Зберегти </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div> 
+                            <button onpointerdown="changeSettingWindow()"  class="setting">На головну</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>
