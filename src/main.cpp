@@ -45,6 +45,7 @@ uint16_t res[num];
 
 int car_section=9;
 const char* car_number = "BO0990OB";
+bool plcConnect = false;
 
 // #0 8bit - progStep; 8bit - Empty;
 // #1 8bit - buttons; 8bit - Empty;
@@ -104,6 +105,7 @@ StaticJsonDocument<512> getJsonPlcData(bool needAllData){
   json["progStep"] = res[0];
   json["current"] = res[30];
   json["option"] = res[14];
+  json["plc_connect"] = plcConnect;
   if (needAllData){
     json["param_0"] = res[16];
     json["param_1"] = res[17];
@@ -138,10 +140,10 @@ void setup(){
   WiFi.begin(ssid, password);
   WiFi.config(ip, gateway, subnet);
   while (WiFi.status() != WL_CONNECTED) {
-    // delay(500);
-    if (readTimer.isReady()) { 
+    delay(500);
+    // if (readTimer.isReady()) { 
       Serial.print(".");
-    }
+    // }
   }
   Serial.println("");
   Serial.println("IP address: ");
@@ -233,13 +235,12 @@ void loop(){
   #ifdef ESP8266
     ArduinoOTA.handle();
   #endif
-  if (mb.isConnected(remote)) {
-    if (readTimer.isReady()) { // Display register value every 5 seconds (with default settings)
-      mb.readHreg(remote, REG, res, num, cb, 1);  // Initiate Read Coil from Modbus Slave
-      mb.task();                      // Common local Modbus task
+  if (readTimer.isReady()) {
+    if (mb.isConnected(remote)) {
+      Serial.println((mb.readHreg(remote, REG, res, num, cb, 1)));
+    } else {
+      Serial.println(mb.connect(remote));
     }
-  } else {
-      mb.connect(remote);
+    mb.task();
   }
-  // delay(750);                     // Pulling interval
 }

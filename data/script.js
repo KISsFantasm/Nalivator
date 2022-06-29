@@ -7,8 +7,9 @@ let validSection = true;
 let numParam = 8;
 let first = true;
 
-let mainW, settingW, pass, loadFrame, loadText;
+let mainW, settingW, pass, loadFrame, loadText, connectFrame, connectText;
 let loadWindow = [];
+let connectWindow = [];
 
 function initParams(){
     mainW = document.getElementById("mainW");
@@ -18,7 +19,10 @@ function initParams(){
 
     loadFrame = document.getElementById('load_frame');
     loadText = document.getElementById('load_text');
+    connectFrame = document.getElementById('connect_frame');
+    connectText = document.getElementById('connect_text');
     loadWindow = [loadFrame, loadText];
+    connectWindow = [connectFrame, connectText];
 }
 
 window.onload = function() {
@@ -54,6 +58,14 @@ function clearLoadWindow(){
 
 function setLoadWindow(){
     multiActionClass('remove', loadWindow, ['hidden']);
+}
+
+function setConnectWindow(){
+    setTimeout(multiActionClass, 2000, 'remove', connectWindow, ['hidden']);
+}
+
+function clearConnectWindow(){
+    multiActionClass('add', connectWindow, ['hidden']);
 }
 
 function refresh(){
@@ -199,6 +211,8 @@ function setPLCValue(respObj){
         checkValidInputs();
         clearLoadWindow();
     }
+
+    if (respObj['plc_connect'] == false) {setConnectWindow();} else {clearConnectWindow();}
     setOption(respObj['option']);
     document.getElementById('val_0').innerHTML = parseFloat(respObj['val_0'])/1000;
     document.getElementById('val_1').innerHTML = parseFloat(respObj['val_1'])/1000;
@@ -278,7 +292,7 @@ function sendPLC(jsObj, func){
         if (this.response){
             let respObj = JSON.parse(this.response);
             setPLCValue(respObj);
-            this.func.call(this, respObj);
+            if (this.func) {this.func.call(this, respObj)};
         }
     };
     xhr.send(jsObj);

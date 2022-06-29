@@ -34,9 +34,8 @@ tr{padding-top: 1vh; width: inherit;}
 .txtAL{text-align: left; padding-top: 2vh;}
 .inline{display: inline;}
 
-.load{ width: 100vw; height: 100vh; position: absolute; left: 0; top: 0;}
-#load_frame{z-index: 9; opacity: 0.9; background: #d9d9d9;}
-#load_text{z-index: 10; opacity: 1; font-size: 10vh; line-height: 85vh;}
+.load{width: 100vw; height: 100vh; position: absolute; left: 0; top: 0; z-index: 9; opacity: 0.9; background: #d9d9d9;}
+.load_txt{width: 100vw; height: 100vh; position: absolute; left: 0; top: 0; z-index: 10; opacity: 1; font-size: 10vh; line-height: 85vh;}
 
 .flexDisplay{
     display:flex; 
