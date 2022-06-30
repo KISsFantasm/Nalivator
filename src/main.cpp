@@ -91,8 +91,8 @@ void setPlcParam(StaticJsonDocument<512> json){
   if (json["param_5"]) {writeParamToPLC(21, json["param_5"]);}
   if (json["param_6"]) {writeParamToPLC(22, json["param_6"]);}
   if (json["param_7"]) {writeParamToPLC(23, json["param_7"]);}
-  if (json["car_section"]) {car_section = json["car_section"]; Serial.println(car_section);}
-  if (json["car_number"]) {car_number = json["car_number"]; Serial.println(car_number);}
+  if (json["car_section"]) {car_section = json["car_section"];}
+  if (json["car_number"]) {car_number = json["car_number"];}
   if (json["option"]) {writeParamToPLC(14, json["option"]);}
 }
 
@@ -122,14 +122,15 @@ StaticJsonDocument<512> getJsonPlcData(bool needAllData){
 }
 
 void setup(){
-  Serial.begin(74880);
   // Initialize SPIFFS
   #ifdef ESP8266
+    Serial.begin(74880);
     if(!SPIFFS.begin()){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
   #else
+    Serial.begin(115200);
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
@@ -232,14 +233,16 @@ bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbu
 }
 
 void loop(){
+
   #ifdef ESP8266
     ArduinoOTA.handle();
   #endif
+
   if (readTimer.isReady()) {
-    if (mb.isConnected(remote)) {
-      Serial.println((mb.readHreg(remote, REG, res, num, cb, 1)));
+    if (plcConnect = mb.isConnected(remote)) {
+      mb.readHreg(remote, REG, res, num, cb, 1);
     } else {
-      Serial.println(mb.connect(remote));
+      mb.connect(remote);
     }
     mb.task();
   }
