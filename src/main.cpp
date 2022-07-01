@@ -24,15 +24,18 @@
 // Replace with your network credentials
 // const char* ssid = "ACS-WIFI";
 // const char* password = "asuandkvpia";
-const char* ssid = "ACS-WIFI";
-const char* password = "asuandkvpia";
+const char* ssid = "VolumeMeter";
+const char* password = "asutp1175";
 GTimer readTimer(MS, 750);
 
 const int REG = 0;               // Modbus Hreg Offset
-IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
+IPAddress remote(192, 168, 11, 137);
+// IPAddress remote(192, 168, 11, 178);  // Address of Modbus Slave device
 
-IPAddress ip(192,168,10,205);
-IPAddress gateway(192,168,10,1);
+IPAddress ip(192,168,11,150);
+IPAddress gateway(192,168,11,1);
+// IPAddress ip(192,168,10,205);
+// IPAddress gateway(192,168,10,1);
 IPAddress subnet(255,255,255,0);
 
 ModbusIP mb;  //ModbusIP object

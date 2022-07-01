@@ -279,7 +279,11 @@ function zeroConfirm(){
     if (step == 10){
         if (confirm('Ви впевнені, що хочете обнулити запис?')) {
             setLoadWindow();
-            mainBAction('zeroButton', 'On');
+            let button = {};
+            button['zeroButton'] = 'on';
+            let jsObj = JSON.stringify(button);
+            connectToESP(jsObj, clearLoadWindow);
+            // mainBAction('zeroButton', 'On');
         } else {}
     }
 }
