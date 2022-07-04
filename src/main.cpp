@@ -20,24 +20,38 @@
 #include "GyverTimer.h"
 #include <WiFiUdp.h>
 
+// Wifi
 
-// Replace with your network credentials
-// const char* ssid = "ACS-WIFI";
-// const char* password = "asuandkvpia";
-const char* ssid = "VolumeMeter";
-const char* password = "asutp1175";
+const char* ssid = "ACS-WIFI";
+const char* password = "asuandkvpia";
+// const char* ssid = "VolumeMeter";
+// const char* password = "asutp1175";
+
+// short wifiIp[4] = {192,168,11,150}; 
+// short wifiGateway[4] = {192,168,11,1}; 
+short wifiIp[4] = {192,168,10,205}; 
+short wifiGateway[4] = {192,168,10,1}; 
+short wifiSubnet[4] = {255,255,255,0}; 
+
+// AP
+
+const char* espSsid = "ESP_Nalivator";
+const char* espPassword = "ESPNalivator";
+
+short apIp[4] = {192,168,4,25}; 
+short apGateway[4] = {192,168,4,1}; 
+short apSubnet[4] = {255,255,255,0}; 
+
+const String apHostIp = (String)apIp[0]+"."+apIp[1]+"."+apIp[2]+"."+apIp[3];
+bool isLogin = false;
+
+//Timer
 GTimer readTimer(MS, 750);
 
-const int REG = 0;               // Modbus Hreg Offset
-IPAddress remote(192, 168, 11, 137);
-// IPAddress remote(192, 168, 11, 178);  // Address of Modbus Slave device
-
-IPAddress ip(192,168,11,150);
-IPAddress gateway(192,168,11,1);
-// IPAddress ip(192,168,10,205);
-// IPAddress gateway(192,168,10,1);
-IPAddress subnet(255,255,255,0);
-
+// Modbus Hreg Offset
+const int REG = 0;               
+IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
+// IPAddress remote(192, 168, 11, 137);
 ModbusIP mb;  //ModbusIP object
 
 // Create AsyncWebServer object on port 80
@@ -139,53 +153,114 @@ void setup(){
       return;
     }
   #endif
+
   // Connect to Wi-Fi
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
   WiFi.begin(ssid, password);
-  WiFi.config(ip, gateway, subnet);
+  WiFi.config(
+    IPAddress(wifiIp[0],wifiIp[1],wifiIp[2],wifiIp[3]),
+    IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
+    IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
+  );
+  WiFi.softAP(espSsid, espPassword);
+  WiFi.softAPConfig(
+    IPAddress(apIp[0],apIp[1],apIp[2],apIp[3]),
+    IPAddress(apGateway[0],apGateway[1],apGateway[2],apGateway[3]),
+    IPAddress(apSubnet[0],apSubnet[1],apSubnet[2],apSubnet[3])
+  );
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    // if (readTimer.isReady()) { 
-      Serial.print(".");
-    // }
+    Serial.print(".");
   }
+
   Serial.println("");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  
 
-  // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html", String());
+    if (request->host() == apHostIp) {
+      if (isLogin){
+        request->send(SPIFFS, "/setting.html", String());
+      } else {
+        request->send(SPIFFS, "/login.html", String());
+      }
+    } else {
+      request->send(SPIFFS, "/main.html", String());
+    }
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/favicon.ico", "image/png");
+    if (request->host() == apHostIp) {
+      request->send(SPIFFS, "/setting.ico", "image/png");
+    } else {
+      request->send(SPIFFS, "/main.ico", "image/png");
+    }
   });
+
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
+    if (request->host() == apHostIp) {
+      if (isLogin){
+        request->send(SPIFFS, "/setting.css", "text/css");
+      } else {
+        request->send(SPIFFS, "/login.css", "text/css");
+      }
+    } else {
+      request->send(SPIFFS, "/main.css", "text/css");
+    }
   });
+
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/script.js", "text/javascript");
+    if (request->host() == apHostIp) {
+      if (isLogin){
+        isLogin = false;
+        request->send(SPIFFS, "/setting.js", "text/javascript");
+      } else {
+        request->send(SPIFFS, "/login.js", "text/javascript");
+      }
+    } else {
+      request->send(SPIFFS, "/main.js", "text/javascript");
+    }
   });
 
   server.on("/Connect", HTTP_POST,
     [](AsyncWebServerRequest *request) {
+    if (request->host() == apHostIp) {
+      request->send(200, "text/plain", "error");
+    } else {
       AsyncResponseStream *response = request->beginResponseStream("application/json");
       serializeJson(getJsonPlcData(false), *response);
       request->send(response);
+    }
     },
     [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-      StaticJsonDocument<512> json;
-      deserializeJson(json, data);
-      setPlcParam(json);
-      // if (json["needAllData"]) {needAllData = true;} else {needAllData = false;}
-      AsyncResponseStream *response = request->beginResponseStream("application/json");
-      serializeJson(getJsonPlcData(json["needAllData"]), *response);
-      request->send(response);
+      if (request->host() == apHostIp) {
+        request->send(200, "text/plain", "error");
+      } else {
+        StaticJsonDocument<512> json;
+        deserializeJson(json, data);
+        setPlcParam(json);
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        serializeJson(getJsonPlcData(json["needAllData"]), *response);
+        request->send(response);
+      }
     }
   );
+
+    server.on("/LogIn", HTTP_POST,
+    [](AsyncWebServerRequest *request) {request->send(200, "text/plain", "error");},
+    [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      if (request->host() == apHostIp) {
+        isLogin = true;
+        request->send(200, "text/plain", "error");
+      } else {
+        request->send(200, "text/plain", "error");
+      }
+    }
+  );
+
   #ifdef ESP8266
     ArduinoOTA.onStart([]() {
       String type;
@@ -194,7 +269,6 @@ void setup(){
       } else {  // U_FS
         type = "filesystem";
       }
-
       // NOTE: if updating FS this would be the place to unmount FS using FS.end()
       Serial.println("Start updating " + type);
     });
@@ -220,6 +294,7 @@ void setup(){
     });
     ArduinoOTA.begin();
   #endif
+
   // Start server
   server.begin();
   mb.client();

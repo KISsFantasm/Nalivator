@@ -211,9 +211,9 @@ function setPLCValue(respObj){
         checkValidInputs();
         clearLoadWindow();
     }
-
-    if (respObj['plc_connect'] == false) {setConnectWindow();} else {clearConnectWindow();}
+    
     setOption(respObj['option']);
+    if (respObj['plc_connect'] == false) {setConnectWindow();} else {clearConnectWindow();}
     document.getElementById('val_0').innerHTML = parseFloat(respObj['val_0'])/1000;
     document.getElementById('val_1').innerHTML = parseFloat(respObj['val_1'])/1000;
     document.getElementById('val_2').innerHTML = parseFloat(respObj['val_2'])/1000;
@@ -305,7 +305,8 @@ function sendPLC(jsObj, func){
 function changeStatus(step){
     document.getElementById('car_number').disabled = true;
     document.getElementById('car_section').disabled = true;
-    document.getElementById('option').disabled = true;
+    document.getElementById('option').disabled = false;
+    // document.getElementById('option').disabled = true;
     document.getElementById('sb1').classList[0] = "";
     document.getElementById('sb1').classList.value = "";
     document.getElementById('sb2').classList[0] = "";
@@ -318,26 +319,30 @@ function changeStatus(step){
     // document.getElementById('doseB').classList[0] = "";
     // document.getElementById('doseB').classList.value = "";
     switch(step){
-        case 0: 
+        case 0:
+            document.getElementById('option').disabled = true;
             document.getElementById('car_number').disabled = false;
             document.getElementById('sb2').classList[0] = "active";
             document.getElementById('sb2').classList.value = "active";
             document.getElementById('sb4').classList[0] = "active";
             document.getElementById('sb4').classList.value = "active";
         return 'Стоп';
-        case 4: 
+        case 4:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
             document.getElementById('sb4').classList[0] = "active";
             document.getElementById('sb4').classList.value = "active";
         return 'Підготовка';
-        case 5: 
+        case 5:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
             document.getElementById('sb4').classList[0] = "active";
             document.getElementById('sb4').classList.value = "active";
         return 'Підготовка';
-        case 6: 
+        case 6:
+            document.getElementById('option').disabled = true;
             document.getElementById('car_section').disabled = false;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
@@ -345,32 +350,35 @@ function changeStatus(step){
             document.getElementById('sb4').classList.value = "active";
         return 'Вибір секції';
         case 10:
-            document.getElementById('option').disabled = false;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
             document.getElementById('sb3').classList[0] = "active";
             document.getElementById('sb3').classList.value = "active";
         return 'Очікування';
-        case 11: 
+        case 11:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
             document.getElementById('sb3').classList[0] = "active";
             document.getElementById('sb3').classList.value = "active";
             multiActionClass('add', [document.getElementById('doseB')], ['active']);
         return 'Подача води';
-        case 12: 
+        case 12:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb1').classList[0] = "active";
             document.getElementById('sb1').classList.value = "active";
             document.getElementById('sb3').classList[0] = "active";
             document.getElementById('sb3').classList.value = "active";
         return 'Зупинка';
         case 20:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb2').classList[0] = "active";
             document.getElementById('sb2').classList.value = "active";
             document.getElementById('sb4').classList[0] = "active";
             document.getElementById('sb4').classList.value = "active";
         return 'Завершення';
         case 21:
+            document.getElementById('option').disabled = true;
             document.getElementById('sb2').classList[0] = "active";
             document.getElementById('sb2').classList.value = "active";
             document.getElementById('sb4').classList[0] = "active";
