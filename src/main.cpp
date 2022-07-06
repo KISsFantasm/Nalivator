@@ -23,13 +23,16 @@
 // Wifi
 
 const char* ssid = "ACS-WIFI";
-const char* password = "asuandkvpia";
-// const char* ssid = "VolumeMeter";
-// const char* password = "asutp1175";
+const char* password = "asuandkvpia";;
 
-// short wifiIp[4] = {192,168,11,150}; 
-// short wifiGateway[4] = {192,168,11,1}; 
-short wifiIp[4] = {192,168,10,205}; 
+
+#ifdef ESP8266
+  short wifiIp[4] = {192,168,10,198};
+#else
+  short wifiIp[4] = {192,168,10,205}; 
+#endif
+
+// short wifiIp[4] = {192,168,10,205}; 
 short wifiGateway[4] = {192,168,10,1}; 
 short wifiSubnet[4] = {255,255,255,0}; 
 
@@ -38,55 +41,55 @@ short wifiSubnet[4] = {255,255,255,0};
 const char* espSsid = "ESP_Nalivator";
 const char* espPassword = "ESPNalivator";
 
-short apIp[4] = {192,168,4,25}; 
+short apIp[4] = {192,168,4,150}; 
 short apGateway[4] = {192,168,4,1}; 
 short apSubnet[4] = {255,255,255,0}; 
 
-const String apHostIp = (String)apIp[0]+"."+apIp[1]+"."+apIp[2]+"."+apIp[3];
-bool isLogin = false;
+// const String apHostIp = (String)apIp[0]+"."+apIp[1]+"."+apIp[2]+"."+apIp[3];
+// bool isLogin = false;
 
 //Timer
 GTimer readTimer(MS, 750);
 
 // Modbus Hreg Offset
 const int REG = 0;               
-IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
+// IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
+IPAddress remote(192, 168, 10, 224);
 // IPAddress remote(192, 168, 11, 137);
 ModbusIP mb;  //ModbusIP object
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
-const int num = 31;
+const int num = 25;
 uint16_t res[num];
 
 int car_section=9;
 const char* car_number = "BO0990OB";
 bool plcConnect = false;
 
+short drops = 0;
+short gdrops = 0;
+
 // #0 8bit - progStep; 8bit - Empty;
 // #1 8bit - buttons; 8bit - Empty;
-// #2 8bit - Empty; 8bit - Empty;
-// #3 2byte - Empty;
-// #4,5 4byte - Empty;
-// #6,7 4byte - fcount01;
-// #8,9 4byte - fcount02;
-// #10,11 4byte - fcount03;
-// #12,13 4byte - fcount04;
-// #14 2byte - mode;
-// #15 2byte - memMode;
-// #16 2byte - maxFlow;
-// #17 2byte - gPImp;
-// #18 2byte - maxVOut;
-// #19 2byte - midVOut;
-// #20 2byte - minVOut;
-// #21 2byte - minKg;
-// #22 2byte - drainageTime;
-// #23 2byte - prepareTime;
-// #24,25 4byte - Empty;
-// #26,27 4byte - ftCounter;
-// #28,29 4byte - counterMem;
-// #30 8bit - currentPos; 8bit - Empty;
+// #2,3 4byte - fcount01;
+// #4,5 4byte - fcount02;
+// #6,7 4byte - fcount03;
+// #8,9 4byte - fcount04;
+// #10 2byte - mode;
+// #11 2byte - memMode;
+// #12 2byte - maxFlow;
+// #13 2byte - gPImp;
+// #14 2byte - maxVOut;
+// #15 2byte - midVOut;
+// #16 2byte - minVOut;
+// #17 2byte - minKg;
+// #18 2byte - drainageTime;
+// #19 2byte - prepareTime;
+// #20,21 4byte - ftCounter;
+// #22,23 4byte - counterMem;
+// #24 8bit - currentPos; 8bit - Empty;
 
 void writeParamToPLC (int mbIdx, uint16_t val){
   mb.writeHreg(remote, mbIdx, val, NULL, 1);
@@ -100,38 +103,39 @@ void setPlcParam(StaticJsonDocument<512> json){
   if (json["zeroButton"]) {if(json["zeroButton"] == "on"){writeParamToPLC(1, res[1]|=1<<4);} else {writeParamToPLC(1, res[1]&=~(1<<4));}}
   if (json["doseButton"]) {if(json["doseButton"] == "on"){writeParamToPLC(1, res[1]|=1<<5);} else {writeParamToPLC(1, res[1]&=~(1<<5));}}
   if (json["flowButton"]) {if(json["flowButton"] == "on"){writeParamToPLC(1, res[1]|=1<<6);} else {writeParamToPLC(1, res[1]&=~(1<<6));}}
-  if (json["param_0"]) {writeParamToPLC(16, json["param_0"]);}
-  if (json["param_1"]) {writeParamToPLC(17, json["param_1"]);}
-  if (json["param_2"]) {writeParamToPLC(18, json["param_2"]);}
-  if (json["param_3"]) {writeParamToPLC(19, json["param_3"]);}
-  if (json["param_4"]) {writeParamToPLC(20, json["param_4"]);}
-  if (json["param_5"]) {writeParamToPLC(21, json["param_5"]);}
-  if (json["param_6"]) {writeParamToPLC(22, json["param_6"]);}
-  if (json["param_7"]) {writeParamToPLC(23, json["param_7"]);}
+  if (json["param_0"]) {writeParamToPLC(12, json["param_0"]);}
+  if (json["param_1"]) {writeParamToPLC(13, json["param_1"]);}
+  if (json["param_2"]) {writeParamToPLC(14, json["param_2"]);}
+  if (json["param_3"]) {writeParamToPLC(15, json["param_3"]);}
+  if (json["param_4"]) {writeParamToPLC(16, json["param_4"]);}
+  if (json["param_5"]) {writeParamToPLC(17, json["param_5"]);}
+  if (json["param_6"]) {writeParamToPLC(18, json["param_6"]);}
+  if (json["param_7"]) {writeParamToPLC(19, json["param_7"]);}
   if (json["car_section"]) {car_section = json["car_section"];}
   if (json["car_number"]) {car_number = json["car_number"];}
-  if (json["option"]) {writeParamToPLC(14, json["option"]);}
+  if (json["option"]) {writeParamToPLC(10, json["option"]);}
 }
 
 StaticJsonDocument<512> getJsonPlcData(bool needAllData){
   StaticJsonDocument<512> json;
-  json["val_0"] = ((uint32_t)res[7] << 16) | res[6];
-  json["val_1"] = ((uint32_t)res[9] << 16) | res[8];
-  json["val_2"] = ((uint32_t)res[11] << 16) | res[10];
-  json["val_3"] = ((uint32_t)res[13] << 16) | res[12];
+  json["val_0"] = ((uint32_t)res[3] << 16) | res[2];
+  json["val_1"] = ((uint32_t)res[5] << 16) | res[4];
+  json["val_2"] = ((uint32_t)res[7] << 16) | res[6];
+  json["val_3"] = ((uint32_t)res[9] << 16) | res[8];
   json["progStep"] = res[0];
-  json["current"] = res[30];
-  json["option"] = res[14];
+  json["current"] = res[24];
+  json["option"] = res[10];
   json["plc_connect"] = plcConnect;
+  json["WiFi_RSSI"] = WiFi.RSSI();
   if (needAllData){
-    json["param_0"] = res[16];
-    json["param_1"] = res[17];
-    json["param_2"] = res[18];
-    json["param_3"] = res[19];
-    json["param_4"] = res[20];
-    json["param_5"] = res[21];
-    json["param_6"] = res[22];
-    json["param_7"] = res[23];
+    json["param_0"] = res[12];
+    json["param_1"] = res[13];
+    json["param_2"] = res[14];
+    json["param_3"] = res[15];
+    json["param_4"] = res[16];
+    json["param_5"] = res[17];
+    json["param_6"] = res[18];
+    json["param_7"] = res[19];
     json["car_number"] = car_number;
     json["car_section"] = car_section;
   }
@@ -155,19 +159,20 @@ void setup(){
   #endif
 
   // Connect to Wi-Fi
-  WiFi.mode(WIFI_AP_STA);
+  // WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   WiFi.config(
     IPAddress(wifiIp[0],wifiIp[1],wifiIp[2],wifiIp[3]),
     IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
     IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
   );
-  WiFi.softAP(espSsid, espPassword);
-  WiFi.softAPConfig(
-    IPAddress(apIp[0],apIp[1],apIp[2],apIp[3]),
-    IPAddress(apGateway[0],apGateway[1],apGateway[2],apGateway[3]),
-    IPAddress(apSubnet[0],apSubnet[1],apSubnet[2],apSubnet[3])
-  );
+  // WiFi.softAP(espSsid, espPassword);
+  // WiFi.softAPConfig(
+  //   IPAddress(apIp[0],apIp[1],apIp[2],apIp[3]),
+  //   IPAddress(apGateway[0],apGateway[1],apGateway[2],apGateway[3]),
+  //   IPAddress(apSubnet[0],apSubnet[1],apSubnet[2],apSubnet[3])
+  // );
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -179,87 +184,93 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (request->host() == apHostIp) {
-      if (isLogin){
-        request->send(SPIFFS, "/setting.html", String());
-      } else {
-        request->send(SPIFFS, "/login.html", String());
+    // if (request->host() == apHostIp) {
+    //   if (isLogin){
+    //     request->send(SPIFFS, "/setting.html", String());
+    //   } else {
+    //     request->send(SPIFFS, "/login.html", String());
+    //   }
+    // } else {
+
+      for(size_t i = 1; i <= request->headers(); i++){
+        Serial.println(request->header(i));
       }
-    } else {
+      Serial.println(request->host());
       request->send(SPIFFS, "/main.html", String());
-    }
+      
+    // }
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (request->host() == apHostIp) {
-      request->send(SPIFFS, "/setting.ico", "image/png");
-    } else {
+    // if (request->host() == apHostIp) {
+    //   request->send(SPIFFS, "/setting.ico", "image/png");
+    // } else {
       request->send(SPIFFS, "/main.ico", "image/png");
-    }
+    // }
   });
 
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (request->host() == apHostIp) {
-      if (isLogin){
-        request->send(SPIFFS, "/setting.css", "text/css");
-      } else {
-        request->send(SPIFFS, "/login.css", "text/css");
-      }
-    } else {
+    // if (request->host() == apHostIp) {
+    //   if (isLogin){
+    //     request->send(SPIFFS, "/setting.css", "text/css");
+    //   } else {
+    //     request->send(SPIFFS, "/login.css", "text/css");
+    //   }
+    // } else {
       request->send(SPIFFS, "/main.css", "text/css");
-    }
+    // }
   });
 
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (request->host() == apHostIp) {
-      if (isLogin){
-        isLogin = false;
-        request->send(SPIFFS, "/setting.js", "text/javascript");
-      } else {
-        request->send(SPIFFS, "/login.js", "text/javascript");
-      }
-    } else {
+    // if (request->host() == apHostIp) {
+    //   if (isLogin){
+    //     isLogin = false;
+    //     request->send(SPIFFS, "/setting.js", "text/javascript");
+    //   } else {
+    //     request->send(SPIFFS, "/login.js", "text/javascript");
+    //   }
+    // } else {
       request->send(SPIFFS, "/main.js", "text/javascript");
-    }
+    // }
   });
 
   server.on("/Connect", HTTP_POST,
     [](AsyncWebServerRequest *request) {
-    if (request->host() == apHostIp) {
-      request->send(200, "text/plain", "error");
-    } else {
+    // if (request->host() == apHostIp) {
+    //   request->send(200, "text/plain", "error");
+    // } else {
       AsyncResponseStream *response = request->beginResponseStream("application/json");
       serializeJson(getJsonPlcData(false), *response);
       request->send(response);
-    }
+    // }
     },
     [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-      if (request->host() == apHostIp) {
-        request->send(200, "text/plain", "error");
-      } else {
+      // if (request->host() == apHostIp) {
+      //   request->send(200, "text/plain", "error");
+      // } else {
         StaticJsonDocument<512> json;
         deserializeJson(json, data);
         setPlcParam(json);
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         serializeJson(getJsonPlcData(json["needAllData"]), *response);
         request->send(response);
-      }
+      // }
     }
   );
 
-    server.on("/LogIn", HTTP_POST,
-    [](AsyncWebServerRequest *request) {request->send(200, "text/plain", "error");},
-    [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
-    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-      if (request->host() == apHostIp) {
-        isLogin = true;
-        request->send(200, "text/plain", "error");
-      } else {
-        request->send(200, "text/plain", "error");
-      }
-    }
-  );
+    // server.on("/LogIn", HTTP_POST,
+    // [](AsyncWebServerRequest *request) {request->send(200, "text/plain", "error");},
+    // [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
+    // [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+    //   if (request->host() == apHostIp) {
+    //     isLogin = true;
+    //     request->send(200, "text/plain", "error");
+    //   } else {
+    //     request->send(200, "text/plain", "error");
+    //   }
+    // }
+  // );
 
   #ifdef ESP8266
     ArduinoOTA.onStart([]() {
@@ -301,11 +312,17 @@ void setup(){
 }
 
 bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbus Transaction callback
-  if (event != Modbus::EX_SUCCESS)                  // If transaction got an error
+  if (event != Modbus::EX_SUCCESS) { // If transaction got an error
     Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
+  } else {
+    drops = 0;
+  }
   if (event == Modbus::EX_TIMEOUT) {    // If Transaction timeout took place
-    mb.disconnect(remote);              // Close connection to slave and
-    mb.dropTransactions();              // Cancel all waiting transactions
+    drops++;
+    if (drops >= 5){
+      mb.disconnect(remote);              // Close connection to slave and
+      mb.dropTransactions();              // Cancel all waiting transactions
+    }
   }
   return true;
 }
@@ -317,7 +334,7 @@ void loop(){
   #endif
 
   if (readTimer.isReady()) {
-    if (plcConnect = mb.isConnected(remote)) {
+    if ((plcConnect = mb.isConnected(remote))) {
       mb.readHreg(remote, REG, res, num, cb, 1);
     } else {
       mb.connect(remote);

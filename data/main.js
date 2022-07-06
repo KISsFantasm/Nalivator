@@ -144,8 +144,9 @@ function setOption(idx){
 }
 
 function changeSettingWindow() {
-    mainW.style['display'] = mainW.style['display'] == 'none' ? 'block' :'none';
-    settingW.style['display'] = settingW.style['display'] == 'block' ? 'none' : 'block';
+    multiActionClass('toggle', [mainW,settingW], ['hidden']);
+    // mainW.style['display'] = mainW.style['display'] == 'none' ? 'block' :'none';
+    // settingW.style['display'] = settingW.style['display'] == 'block' ? 'none' : 'block';
 }
 
 function saveParam(){

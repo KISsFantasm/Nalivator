@@ -1,6 +1,7 @@
 body {
     font-family: Arial;
-    font-size: 3.5vh; 
+    font-size: 3.5vh;
+    margin-left: 0vw;
     background-color: #959bbf; 
     -moz-user-select: none; 
     -khtml-user-select: none; 
@@ -31,7 +32,7 @@ tr{padding-top: 1vh; width: inherit;}
 
 .hidden{display: none;}
 
-.txtAL{text-align: left; padding-top: 2vh;}
+.txtAL{text-align: left; padding-top: 2vh; margin-left: 1vw;}
 .inline{display: inline;}
 
 .load{width: 100vw; height: 100vh; position: absolute; left: 0; top: 0; z-index: 9; opacity: 0.9; background: #d9d9d9;}
@@ -42,12 +43,12 @@ tr{padding-top: 1vh; width: inherit;}
     justify-content: space-between;
 }
 
-.mainButtons{height:25vh;}
-.mainOptions{height:12vh; text-align: left; padding-left: 4vw;}
+.mainButtons{height:25vh; padding-left: 4vw;}
+.mainOptions{height:12vh; text-align: left; padding-left: 4vw; font-size: 3.5vh;}
 .mainValues{height:15vh;}
-.mainActions{height:30vh;}
+.mainActions{height:30vh; padding-left: 4vw;}
 
-.paramWindow{height: 50vh; overflow-y: scroll; overflow-x: hidden; border: 2px solid black;}
+.paramWindow{height: 50vh; overflow-y: scroll; overflow-x: hidden; border: 2px solid black; margin-left: 1vw;}
 
 button {
     position: relative; 
@@ -106,6 +107,7 @@ button.active:active {
 }
 
 button.setting{
+    left: 9vw;
     width: 80vw;
     margin-top: 8vw;
     font-size: 4.5vh;
@@ -117,6 +119,7 @@ button.actions{
 
 .val_div{
     display: flex;
+    justify-content: center;
     height:6vh; 
     font-size: 4vh; 
     margin-top: 1vh; 
@@ -148,6 +151,8 @@ button.actions{
 }
 
 .val{
+    line-height: 5vh;
+    font-size: 3vh; 
     padding-right:1vw; 
     text-align:right; 
     border-radius: 1em;  
