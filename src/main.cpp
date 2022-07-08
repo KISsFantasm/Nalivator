@@ -53,8 +53,8 @@ GTimer readTimer(MS, 750);
 
 // Modbus Hreg Offset
 const int REG = 0;               
-// IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
-IPAddress remote(192, 168, 10, 224);
+IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
+// IPAddress remote(192, 168, 10, 224);
 // IPAddress remote(192, 168, 11, 137);
 ModbusIP mb;  //ModbusIP object
 
@@ -95,51 +95,51 @@ void writeParamToPLC (int mbIdx, uint16_t val){
   mb.writeHreg(remote, mbIdx, val, NULL, 1);
 }
 
-void setPlcParam(StaticJsonDocument<512> json){
-  if (json["startCButton"]) {if(json["startCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<0);} else {writeParamToPLC(1, res[1]&=~(1<<0));}}
-  if (json["stopCButton"]) {if(json["stopCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<1);} else {writeParamToPLC(1, res[1]&=~(1<<1));}}
-  if (json["startSButton"]) {if(json["startSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<2);} else {writeParamToPLC(1, res[1]&=~(1<<2));}}
-  if (json["stopSButton"]) {if(json["stopSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<3);} else {writeParamToPLC(1, res[1]&=~(1<<3));}}
-  if (json["zeroButton"]) {if(json["zeroButton"] == "on"){writeParamToPLC(1, res[1]|=1<<4);} else {writeParamToPLC(1, res[1]&=~(1<<4));}}
-  if (json["doseButton"]) {if(json["doseButton"] == "on"){writeParamToPLC(1, res[1]|=1<<5);} else {writeParamToPLC(1, res[1]&=~(1<<5));}}
-  if (json["flowButton"]) {if(json["flowButton"] == "on"){writeParamToPLC(1, res[1]|=1<<6);} else {writeParamToPLC(1, res[1]&=~(1<<6));}}
-  if (json["param_0"]) {writeParamToPLC(12, json["param_0"]);}
-  if (json["param_1"]) {writeParamToPLC(13, json["param_1"]);}
-  if (json["param_2"]) {writeParamToPLC(14, json["param_2"]);}
-  if (json["param_3"]) {writeParamToPLC(15, json["param_3"]);}
-  if (json["param_4"]) {writeParamToPLC(16, json["param_4"]);}
-  if (json["param_5"]) {writeParamToPLC(17, json["param_5"]);}
-  if (json["param_6"]) {writeParamToPLC(18, json["param_6"]);}
-  if (json["param_7"]) {writeParamToPLC(19, json["param_7"]);}
-  if (json["car_section"]) {car_section = json["car_section"];}
-  if (json["car_number"]) {car_number = json["car_number"];}
-  if (json["option"]) {writeParamToPLC(10, json["option"]);}
+StaticJsonDocument<512> jsonIN;
+void setPlcParam(){
+  if (jsonIN["startCButton"]) {if(jsonIN["startCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<0);} else {writeParamToPLC(1, res[1]&=~(1<<0));}}
+  if (jsonIN["stopCButton"]) {if(jsonIN["stopCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<1);} else {writeParamToPLC(1, res[1]&=~(1<<1));}}
+  if (jsonIN["startSButton"]) {if(jsonIN["startSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<2);} else {writeParamToPLC(1, res[1]&=~(1<<2));}}
+  if (jsonIN["stopSButton"]) {if(jsonIN["stopSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<3);} else {writeParamToPLC(1, res[1]&=~(1<<3));}}
+  if (jsonIN["zeroButton"]) {if(jsonIN["zeroButton"] == "on"){writeParamToPLC(1, res[1]|=1<<4);} else {writeParamToPLC(1, res[1]&=~(1<<4));}}
+  if (jsonIN["doseButton"]) {if(jsonIN["doseButton"] == "on"){writeParamToPLC(1, res[1]|=1<<5);} else {writeParamToPLC(1, res[1]&=~(1<<5));}}
+  if (jsonIN["flowButton"]) {if(jsonIN["flowButton"] == "on"){writeParamToPLC(1, res[1]|=1<<6);} else {writeParamToPLC(1, res[1]&=~(1<<6));}}
+  if (jsonIN["param_0"]) {writeParamToPLC(12, jsonIN["param_0"]);}
+  if (jsonIN["param_1"]) {writeParamToPLC(13, jsonIN["param_1"]);}
+  if (jsonIN["param_2"]) {writeParamToPLC(14, jsonIN["param_2"]);}
+  if (jsonIN["param_3"]) {writeParamToPLC(15, jsonIN["param_3"]);}
+  if (jsonIN["param_4"]) {writeParamToPLC(16, jsonIN["param_4"]);}
+  if (jsonIN["param_5"]) {writeParamToPLC(17, jsonIN["param_5"]);}
+  if (jsonIN["param_6"]) {writeParamToPLC(18, jsonIN["param_6"]);}
+  if (jsonIN["param_7"]) {writeParamToPLC(19, jsonIN["param_7"]);}
+  if (jsonIN["car_section"]) {car_section = jsonIN["car_section"];}
+  if (jsonIN["car_number"]) {car_number = jsonIN["car_number"];}
+  if (jsonIN["option"]) {writeParamToPLC(10, jsonIN["option"]);}
 }
 
-StaticJsonDocument<512> getJsonPlcData(bool needAllData){
-  StaticJsonDocument<512> json;
-  json["val_0"] = ((uint32_t)res[3] << 16) | res[2];
-  json["val_1"] = ((uint32_t)res[5] << 16) | res[4];
-  json["val_2"] = ((uint32_t)res[7] << 16) | res[6];
-  json["val_3"] = ((uint32_t)res[9] << 16) | res[8];
-  json["progStep"] = res[0];
-  json["current"] = res[24];
-  json["option"] = res[10];
-  json["plc_connect"] = plcConnect;
-  json["WiFi_RSSI"] = WiFi.RSSI();
+StaticJsonDocument<512> jsonOut;
+void getJsonPlcData(bool needAllData){
+  jsonOut["val_0"] = ((uint32_t)res[3] << 16) | res[2];
+  jsonOut["val_1"] = ((uint32_t)res[5] << 16) | res[4];
+  jsonOut["val_2"] = ((uint32_t)res[7] << 16) | res[6];
+  jsonOut["val_3"] = ((uint32_t)res[9] << 16) | res[8];
+  jsonOut["progStep"] = res[0];
+  jsonOut["current"] = res[24];
+  jsonOut["option"] = res[10];
+  jsonOut["plc_connect"] = plcConnect;
+  jsonOut["WiFi_RSSI"] = WiFi.RSSI();
   if (needAllData){
-    json["param_0"] = res[12];
-    json["param_1"] = res[13];
-    json["param_2"] = res[14];
-    json["param_3"] = res[15];
-    json["param_4"] = res[16];
-    json["param_5"] = res[17];
-    json["param_6"] = res[18];
-    json["param_7"] = res[19];
-    json["car_number"] = car_number;
-    json["car_section"] = car_section;
+    jsonOut["param_0"] = res[12];
+    jsonOut["param_1"] = res[13];
+    jsonOut["param_2"] = res[14];
+    jsonOut["param_3"] = res[15];
+    jsonOut["param_4"] = res[16];
+    jsonOut["param_5"] = res[17];
+    jsonOut["param_6"] = res[18];
+    jsonOut["param_7"] = res[19];
+    jsonOut["car_number"] = car_number;
+    jsonOut["car_section"] = car_section;
   }
-  return json;
 }
 
 void setup(){
@@ -157,7 +157,6 @@ void setup(){
       return;
     }
   #endif
-
   // Connect to Wi-Fi
   // WiFi.mode(WIFI_AP_STA);
   WiFi.mode(WIFI_STA);
@@ -167,6 +166,7 @@ void setup(){
     IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
     IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
   );
+
   // WiFi.softAP(espSsid, espPassword);
   // WiFi.softAPConfig(
   //   IPAddress(apIp[0],apIp[1],apIp[2],apIp[3]),
@@ -184,93 +184,40 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    // if (request->host() == apHostIp) {
-    //   if (isLogin){
-    //     request->send(SPIFFS, "/setting.html", String());
-    //   } else {
-    //     request->send(SPIFFS, "/login.html", String());
-    //   }
-    // } else {
+      request->send(SPIFFS, "/main.html", "text/html");
+  });
 
-      for(size_t i = 1; i <= request->headers(); i++){
-        Serial.println(request->header(i));
-      }
-      Serial.println(request->host());
-      request->send(SPIFFS, "/main.html", String());
-      
-    // }
+  server.on("/test.html", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(SPIFFS, "/test.html", "text/html");
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    // if (request->host() == apHostIp) {
-    //   request->send(SPIFFS, "/setting.ico", "image/png");
-    // } else {
       request->send(SPIFFS, "/main.ico", "image/png");
-    // }
   });
 
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    // if (request->host() == apHostIp) {
-    //   if (isLogin){
-    //     request->send(SPIFFS, "/setting.css", "text/css");
-    //   } else {
-    //     request->send(SPIFFS, "/login.css", "text/css");
-    //   }
-    // } else {
       request->send(SPIFFS, "/main.css", "text/css");
-    // }
   });
 
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    // if (request->host() == apHostIp) {
-    //   if (isLogin){
-    //     isLogin = false;
-    //     request->send(SPIFFS, "/setting.js", "text/javascript");
-    //   } else {
-    //     request->send(SPIFFS, "/login.js", "text/javascript");
-    //   }
-    // } else {
       request->send(SPIFFS, "/main.js", "text/javascript");
-    // }
   });
 
   server.on("/Connect", HTTP_POST,
     [](AsyncWebServerRequest *request) {
-    // if (request->host() == apHostIp) {
-    //   request->send(200, "text/plain", "error");
-    // } else {
+      for (size_t  i = 0 ; i < request->args(); i++){
+        AsyncWebParameter *par = request->getParam(i);
+        if (par->name() == "json") {
+          deserializeJson(jsonIN, par->value()); 
+          setPlcParam();
+        }
+      }
       AsyncResponseStream *response = request->beginResponseStream("application/json");
-      serializeJson(getJsonPlcData(false), *response);
+      getJsonPlcData(false);
+      serializeJson(jsonOut, *response);
       request->send(response);
-    // }
-    },
-    [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
-    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-      // if (request->host() == apHostIp) {
-      //   request->send(200, "text/plain", "error");
-      // } else {
-        StaticJsonDocument<512> json;
-        deserializeJson(json, data);
-        setPlcParam(json);
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
-        serializeJson(getJsonPlcData(json["needAllData"]), *response);
-        request->send(response);
-      // }
     }
   );
-
-    // server.on("/LogIn", HTTP_POST,
-    // [](AsyncWebServerRequest *request) {request->send(200, "text/plain", "error");},
-    // [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {request->send(200, "text/plain", "error");},
-    // [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-    //   if (request->host() == apHostIp) {
-    //     isLogin = true;
-    //     request->send(200, "text/plain", "error");
-    //   } else {
-    //     request->send(200, "text/plain", "error");
-    //   }
-    // }
-  // );
 
   #ifdef ESP8266
     ArduinoOTA.onStart([]() {
@@ -305,7 +252,6 @@ void setup(){
     });
     ArduinoOTA.begin();
   #endif
-
   // Start server
   server.begin();
   mb.client();
@@ -313,7 +259,7 @@ void setup(){
 
 bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbus Transaction callback
   if (event != Modbus::EX_SUCCESS) { // If transaction got an error
-    Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
+    // Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
   } else {
     drops = 0;
   }

@@ -273,7 +273,7 @@ function createOption(parent, value){
 
 function connectToESP(jsObj, func) {
     // if (!func) func = clearLoadWindow;
-    setTimeout(sendPLC,request, jsObj, func);
+    setTimeout(sendPLC,request*50, jsObj, func);
 }
 
 function zeroConfirm(){
@@ -290,17 +290,21 @@ function zeroConfirm(){
 }
 
 function sendPLC(jsObj, func){
+    request++;
+    let uri = "/Connect";
     let xhr = new XMLHttpRequest();
-    xhr.open("POST", "/Connect", true);
+    if (jsObj) {uri += "?json="+jsObj;} 
+    xhr.open("POST", uri, true);
     xhr.func = func;
     xhr.onload = function () {
+        request--;
         if (this.response){
             let respObj = JSON.parse(this.response);
             setPLCValue(respObj);
             if (this.func) {this.func.call(this, respObj)};
         }
     };
-    xhr.send(jsObj);
+    xhr.send();
 }
 
 function changeStatus(step){
