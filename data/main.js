@@ -11,7 +11,39 @@ let mainW, settingW, pass, loadFrame, loadText, connectFrame, connectText;
 let loadWindow = [];
 let connectWindow = [];
 
+let b1, b2, b3, b4, doseB;
+let selector, carN, carS;
+let par0, par1, par2, par3, par4, par5, par6, par7;
+let val0, val1, val2, val3;
+let current, currentSt;
+
 function initParams(){
+    par0 = document.getElementById('param_0');
+    par1 = document.getElementById('param_1');
+    par2 = document.getElementById('param_2');
+    par3 = document.getElementById('param_3');
+    par4 = document.getElementById('param_4');
+    par5 = document.getElementById('param_5');
+    par6 = document.getElementById('param_6');
+    par7 = document.getElementById('param_7');
+
+    val0 = document.getElementById('val_0');
+    val1 = document.getElementById('val_1');
+    val2 = document.getElementById('val_2');
+    val3 = document.getElementById('val_3'); 
+
+    current = document.getElementById('current');
+    currentSt = document.getElementById('status');
+     
+    sb1 = document.getElementById('sb1');
+    sb2 = document.getElementById('sb2');
+    sb3 = document.getElementById('sb3');
+    sb4 = document.getElementById('sb4');
+    doseB = document.getElementById('doseB');
+    selector = document.getElementById('option');
+    carN = document.getElementById('car_number');
+    carS = document.getElementById('car_section');
+
     mainW = document.getElementById("mainW");
     settingW = document.getElementById("settingW");
     chartW = document.getElementById("chartW");
@@ -21,6 +53,8 @@ function initParams(){
     loadText = document.getElementById('load_text');
     connectFrame = document.getElementById('connect_frame');
     connectText = document.getElementById('connect_text');
+
+    paramArray = [par0, par1, par2, par3, par4, par5, par6, par7];
     loadWindow = [loadFrame, loadText];
     connectWindow = [connectFrame, connectText];
 }
@@ -29,7 +63,7 @@ window.onload = function() {
     initParams();
     drawArrow();
     let jsObj = JSON.stringify({needAllData: true});
-    connectToESP(jsObj);
+    connectToESP(jsObj, clearLoadWindow);
     setInterval(refresh, 750);
 }
 
@@ -119,17 +153,16 @@ function drawLineElement(id, object){
 }
 
 function refreshImage(){
-    let current = document.getElementById('current').dataset['plc'];
     for (let i = 0; i<=3; i++){
         let img = document.getElementById('img_'+i);
-        img.style['display'] = (current == i) ? "block" : "none";
+        img.style['display'] = (current.dataset['plc'] == i) ? "block" : "none";
     }
 }
 
 function mainBAction(actionName, action){
-    document.getElementById('car_number').disabled = true;
-    document.getElementById('car_section').disabled = true;
-    document.getElementById('option').disabled = true;
+    carN.disabled = true;
+    carS.disabled = true;
+    selector.disabled = true;
     if (step == 11 && actionName == 'doseButton') action = 'off';
     let button = {};
     button[actionName] = action;
@@ -138,26 +171,22 @@ function mainBAction(actionName, action){
 }
 
 function setOption(idx){
-    let select = document.getElementById('option');
-    let option = (idx) ? select.options[idx] : select.options[0];
+    let option = (idx) ? selector.options[idx] : selector.options[0];
     option.selected = true;
 }
 
 function changeSettingWindow() {
     multiActionClass('toggle', [mainW,settingW], ['hidden']);
-    // mainW.style['display'] = mainW.style['display'] == 'none' ? 'block' :'none';
-    // settingW.style['display'] = settingW.style['display'] == 'block' ? 'none' : 'block';
 }
 
 function saveParam(){
     setLoadWindow();
     let obj = {};
-    for (let i = 0 ; i < numParam; i++) {
-        let par = document.getElementById('param_'+i);
-        let val = par.value;
-        if (i == 1) {val = (parseFloat(val)*1000).toString()};
-        obj['param_'+i] = val;
-    }; 
+    for (let idx in paramArray){
+        let val = paramArray[idx].value;
+        if (idx == 1) {val = (parseFloat(val)*1000).toString()};
+        obj['param_'+idx] = val;
+    }
     let jsObj = JSON.stringify(obj);
     connectToESP(jsObj, clearLoadWindow);
 }
@@ -165,20 +194,19 @@ function saveParam(){
 function saveCarNumber(){
     if (validCar) {
         setLoadWindow();
-        let jsObj = JSON.stringify({car_number: document.getElementById('car_number').value});
+        let jsObj = JSON.stringify({car_number: carN.value});
         connectToESP(jsObj, clearLoadWindow);
     }
 }
 function saveCarSection(){
     if (validSection) {
         setLoadWindow();
-        let jsObj = JSON.stringify({car_section: document.getElementById('car_section').value});
+        let jsObj = JSON.stringify({car_section: carS.value});
         connectToESP(jsObj, clearLoadWindow);
     }
 }
 function saveOption(){
     setLoadWindow();
-    let selector = document.getElementById('option');
     let jsObj = JSON.stringify({option: selector.options[selector.selectedIndex].value});
     connectToESP(jsObj, clearLoadWindow);
 }
@@ -186,42 +214,39 @@ function saveOption(){
 function checkPass() {
     let access = false;
     if (pass.value == "123") access = true;
-    for (let i = 0; i < numParam; i++){
-        let param = document.getElementById('param_'+i);
-        param.disabled = !access;
+    for (let idx in paramArray){
+        paramArray[idx].disabled = !access;
     }
 }
 
 function setPLCValue(respObj){
     if (first){
         first = false;
-        document.getElementById('car_number').value = respObj['car_number'];
-        document.getElementById('car_section').value = respObj['car_section'];
-        document.getElementById('param_0').value = respObj['param_0'];
-        document.getElementById('param_1').value = (parseFloat(respObj['param_1'])/1000).toString();
-        document.getElementById('param_2').value = respObj['param_2'];
-        document.getElementById('param_3').value = respObj['param_3'];
-        document.getElementById('param_4').value = respObj['param_4'];
-        document.getElementById('param_5').value = respObj['param_5'];
-        document.getElementById('param_6').value = respObj['param_6'];
-        document.getElementById('param_7').value = respObj['param_7'];      
-        for (let i = 0; i < numParam; i++){
-            let param = document.getElementById('param_'+i);
-            param.value = param.valueAsNumber;
-        }
+        carN.value = respObj['car_number'];
+        carS.value = respObj['car_section'];
         checkValidInputs();
-        clearLoadWindow();
+        par0.value = respObj['param_0'];
+        par1.value = (parseFloat(respObj['param_1'])/1000).toString();
+        par2.value = respObj['param_2'];
+        par3.value = respObj['param_3'];
+        par4.value = respObj['param_4'];
+        par5.value = respObj['param_5'];
+        par6.value = respObj['param_6'];
+        par7.value = respObj['param_7'];      
+        for (let idx in paramArray){
+            paramArray[idx].value = paramArray[idx].valueAsNumber;
+        }
     }
-    
+    // if (carN.value != respObj['car_number']) carN.value = respObj['car_number'];
     setOption(respObj['option']);
     if (respObj['plc_connect'] == false) {setConnectWindow();} else {clearConnectWindow();}
-    document.getElementById('val_0').innerHTML = parseFloat(respObj['val_0'])/1000;
-    document.getElementById('val_1').innerHTML = parseFloat(respObj['val_1'])/1000;
-    document.getElementById('val_2').innerHTML = parseFloat(respObj['val_2'])/1000;
-    document.getElementById('val_3').innerHTML = parseFloat(respObj['val_3'])/1000;
-    document.getElementById('current').dataset['plc'] = respObj['current'];
+    val0.innerHTML = parseFloat(respObj['val_0'])/1000;
+    val1.innerHTML = parseFloat(respObj['val_1'])/1000;
+    val2.innerHTML = parseFloat(respObj['val_2'])/1000;
+    val3.innerHTML = parseFloat(respObj['val_3'])/1000;
+    current.dataset['plc'] = respObj['current'];
     step = respObj['progStep'];
-    document.getElementById('status').innerHTML = changeStatus(step);
+    currentSt.innerHTML = changeStatus(step);
     refreshImage();
 }
 
@@ -261,8 +286,8 @@ function validText(text, pattern){
 }
 
 function checkValidInputs(){
-    validInput(document.getElementById('car_number'), 'car');
-    validInput(document.getElementById('car_section'), 'section','number');
+    validInput(carN, 'car');
+    validInput(carS, 'section','number');
 }
 
 function createOption(parent, value){
@@ -272,7 +297,6 @@ function createOption(parent, value){
 }
 
 function connectToESP(jsObj, func) {
-    // if (!func) func = clearLoadWindow;
     setTimeout(sendPLC,request*50, jsObj, func);
 }
 
@@ -284,7 +308,6 @@ function zeroConfirm(){
             button['zeroButton'] = 'on';
             let jsObj = JSON.stringify(button);
             connectToESP(jsObj, clearLoadWindow);
-            // mainBAction('zeroButton', 'On');
         } else {}
     }
 }
@@ -308,86 +331,61 @@ function sendPLC(jsObj, func){
 }
 
 function changeStatus(step){
-    document.getElementById('car_number').disabled = true;
-    document.getElementById('car_section').disabled = true;
-    document.getElementById('option').disabled = false;
-    // document.getElementById('option').disabled = true;
-    document.getElementById('sb1').classList[0] = "";
-    document.getElementById('sb1').classList.value = "";
-    document.getElementById('sb2').classList[0] = "";
-    document.getElementById('sb2').classList.value = "";
-    document.getElementById('sb3').classList[0] = "";
-    document.getElementById('sb3').classList.value = "";
-    document.getElementById('sb4').classList[0] = "";
-    document.getElementById('sb4').classList.value = "";
-    multiActionClass('remove', [document.getElementById('doseB')], ['active']);
-    // document.getElementById('doseB').classList[0] = "";
-    // document.getElementById('doseB').classList.value = "";
+    selector.disabled = false;
+    carN.disabled = false;
+    carS.disabled = false;
+    multiActionClass('remove', [sb1,sb2,sb3,sb4,doseB], ['active']);
     switch(step){
         case 0:
-            document.getElementById('option').disabled = true;
-            document.getElementById('car_number').disabled = false;
-            document.getElementById('sb2').classList[0] = "active";
-            document.getElementById('sb2').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb2,sb4], ['active']);
         return 'Стоп';
         case 4:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb1,sb4], ['active']);
         return 'Підготовка';
         case 5:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb1,sb4], ['active']);
         return 'Підготовка';
         case 6:
-            document.getElementById('option').disabled = true;
-            document.getElementById('car_section').disabled = false;
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            multiActionClass('add', [sb1,sb4], ['active']);
         return 'Вибір секції';
         case 10:
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb3').classList[0] = "active";
-            document.getElementById('sb3').classList.value = "active";
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb1,sb3], ['active']);
         return 'Очікування';
         case 11:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb3').classList[0] = "active";
-            document.getElementById('sb3').classList.value = "active";
-            multiActionClass('add', [document.getElementById('doseB')], ['active']);
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb1,sb3,doseB], ['active']);
         return 'Подача води';
         case 12:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb1').classList[0] = "active";
-            document.getElementById('sb1').classList.value = "active";
-            document.getElementById('sb3').classList[0] = "active";
-            document.getElementById('sb3').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb1,sb3], ['active']);
         return 'Зупинка';
         case 20:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb2').classList[0] = "active";
-            document.getElementById('sb2').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb2,sb4], ['active']);
         return 'Завершення';
         case 21:
-            document.getElementById('option').disabled = true;
-            document.getElementById('sb2').classList[0] = "active";
-            document.getElementById('sb2').classList.value = "active";
-            document.getElementById('sb4').classList[0] = "active";
-            document.getElementById('sb4').classList.value = "active";
+            selector.disabled = true;
+            carN.disabled = true;
+            carS.disabled = true;
+            multiActionClass('add', [sb2,sb4], ['active']);
         return 'Завершення';
     }
 }

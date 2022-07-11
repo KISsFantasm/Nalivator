@@ -25,14 +25,12 @@
 const char* ssid = "ACS-WIFI";
 const char* password = "asuandkvpia";;
 
-
 #ifdef ESP8266
   short wifiIp[4] = {192,168,10,198};
 #else
   short wifiIp[4] = {192,168,10,205}; 
 #endif
 
-// short wifiIp[4] = {192,168,10,205}; 
 short wifiGateway[4] = {192,168,10,1}; 
 short wifiSubnet[4] = {255,255,255,0}; 
 
@@ -45,9 +43,6 @@ short apIp[4] = {192,168,4,150};
 short apGateway[4] = {192,168,4,1}; 
 short apSubnet[4] = {255,255,255,0}; 
 
-// const String apHostIp = (String)apIp[0]+"."+apIp[1]+"."+apIp[2]+"."+apIp[3];
-// bool isLogin = false;
-
 //Timer
 GTimer readTimer(MS, 750);
 
@@ -55,7 +50,6 @@ GTimer readTimer(MS, 750);
 const int REG = 0;               
 IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
 // IPAddress remote(192, 168, 10, 224);
-// IPAddress remote(192, 168, 11, 137);
 ModbusIP mb;  //ModbusIP object
 
 // Create AsyncWebServer object on port 80
@@ -64,12 +58,15 @@ AsyncWebServer server(80);
 const int num = 25;
 uint16_t res[num];
 
+String car_number = "BO0990OB";
 int car_section=9;
-const char* car_number = "BO0990OB";
+
 bool plcConnect = false;
 
 short drops = 0;
 short gdrops = 0;
+
+String fileName = "main";
 
 // #0 8bit - progStep; 8bit - Empty;
 // #1 8bit - buttons; 8bit - Empty;
@@ -113,12 +110,13 @@ void setPlcParam(){
   if (jsonIN["param_6"]) {writeParamToPLC(18, jsonIN["param_6"]);}
   if (jsonIN["param_7"]) {writeParamToPLC(19, jsonIN["param_7"]);}
   if (jsonIN["car_section"]) {car_section = jsonIN["car_section"];}
-  if (jsonIN["car_number"]) {car_number = jsonIN["car_number"];}
+  if (jsonIN["car_number"]) {String mem = jsonIN["car_number"]; car_number = mem;}
   if (jsonIN["option"]) {writeParamToPLC(10, jsonIN["option"]);}
 }
 
 StaticJsonDocument<512> jsonOut;
-void getJsonPlcData(bool needAllData){
+void getJsonPlcData(){
+  jsonOut = {};
   jsonOut["val_0"] = ((uint32_t)res[3] << 16) | res[2];
   jsonOut["val_1"] = ((uint32_t)res[5] << 16) | res[4];
   jsonOut["val_2"] = ((uint32_t)res[7] << 16) | res[6];
@@ -128,7 +126,10 @@ void getJsonPlcData(bool needAllData){
   jsonOut["option"] = res[10];
   jsonOut["plc_connect"] = plcConnect;
   jsonOut["WiFi_RSSI"] = WiFi.RSSI();
-  if (needAllData){
+  if (jsonIN["needAllData"] && jsonIN["needAllData"] == true) {
+    jsonIN["needAllData"] = false;
+    jsonOut["car_number"] = car_number;
+    jsonOut["car_section"] = car_section;
     jsonOut["param_0"] = res[12];
     jsonOut["param_1"] = res[13];
     jsonOut["param_2"] = res[14];
@@ -137,8 +138,6 @@ void getJsonPlcData(bool needAllData){
     jsonOut["param_5"] = res[17];
     jsonOut["param_6"] = res[18];
     jsonOut["param_7"] = res[19];
-    jsonOut["car_number"] = car_number;
-    jsonOut["car_section"] = car_section;
   }
 }
 
@@ -184,23 +183,25 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      fileName = "main";
       request->send(SPIFFS, "/main.html", "text/html");
   });
 
-  server.on("/test.html", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/test.html", "text/html");
+  server.on("/login.html", HTTP_GET, [](AsyncWebServerRequest *request){
+      fileName = "login";
+      request->send(SPIFFS, "/login.html", "text/html");
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/main.ico", "image/png");
+  server.on("^\\/[\\w]+\\.ico$", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(SPIFFS, "/"+fileName+".ico", "image/png");
   });
 
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/main.css", "text/css");
+  server.on("^\\/[\\w]+\\.css$", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(SPIFFS, "/"+fileName+".css", "text/css");
   });
 
-  server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/main.js", "text/javascript");
+  server.on("^\\/[\\w]+\\.js$", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(SPIFFS, "/"+fileName+".js", "text/javascript");
   });
 
   server.on("/Connect", HTTP_POST,
@@ -208,12 +209,12 @@ void setup(){
       for (size_t  i = 0 ; i < request->args(); i++){
         AsyncWebParameter *par = request->getParam(i);
         if (par->name() == "json") {
-          deserializeJson(jsonIN, par->value()); 
+          deserializeJson(jsonIN, par->value());
           setPlcParam();
         }
       }
       AsyncResponseStream *response = request->beginResponseStream("application/json");
-      getJsonPlcData(false);
+      getJsonPlcData();
       serializeJson(jsonOut, *response);
       request->send(response);
     }
@@ -265,7 +266,7 @@ bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbu
   }
   if (event == Modbus::EX_TIMEOUT) {    // If Transaction timeout took place
     drops++;
-    if (drops >= 5){
+    if (drops >= 5) {
       mb.disconnect(remote);              // Close connection to slave and
       mb.dropTransactions();              // Cancel all waiting transactions
     }
