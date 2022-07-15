@@ -23,7 +23,10 @@
 // Wifi
 
 const char* ssid = "ACS-WIFI";
-const char* password = "asuandkvpia";;
+const char* password = "asuandkvpia";
+
+const char* http_username[] = {"admin","admin2"};
+const char* http_password[] = {"admin","admin2"};
 
 #ifdef ESP8266
   short wifiIp[4] = {192,168,10,198};
@@ -183,25 +186,34 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      fileName = "main";
-      request->send(SPIFFS, "/main.html", "text/html");
-  });
-
-  server.on("/login.html", HTTP_GET, [](AsyncWebServerRequest *request){
-      fileName = "login";
-      request->send(SPIFFS, "/login.html", "text/html");
+    bool valid = false;
+    for (short i = 0; i < (*(&http_username + 1) - http_username); i++){
+      // const char* a = http_username[0];
+      // Serial.println((String)http_username[i]+" : "+http_password[i]);
+      
+      if(request->authenticate(http_username[i], http_password[i])){
+        valid = true;
+        break;
+      }
+    }
+    if (!valid) return request->requestAuthentication();
+    request->send(SPIFFS, "/main.html", "text/html");
   });
 
   server.on("^\\/[\\w]+\\.ico$", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send(SPIFFS, "/"+fileName+".ico", "image/png");
   });
+  
 
   server.on("^\\/[\\w]+\\.css$", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send(SPIFFS, "/"+fileName+".css", "text/css");
   });
 
   server.on("^\\/[\\w]+\\.js$", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/"+fileName+".js", "text/javascript");
+      // request->send(SPIFFS, "/"+fileName+".js", "text/javascript");
+      // request->client()->disconnected();
+      // request->client()->close(true);
+      request->send(401);
   });
 
   server.on("/Connect", HTTP_POST,

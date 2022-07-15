@@ -320,11 +320,13 @@ function sendPLC(jsObj, func){
     xhr.open("POST", uri, true);
     xhr.func = func;
     xhr.onload = function () {
-        request--;
-        if (this.response){
-            let respObj = JSON.parse(this.response);
-            setPLCValue(respObj);
-            if (this.func) {this.func.call(this, respObj)};
+        if (this.status == 200){
+            request--;
+            if (this.response){
+                let respObj = JSON.parse(this.response);
+                setPLCValue(respObj);
+                if (this.func) {this.func.call(this, respObj)};
+            }
         }
     };
     xhr.send();
