@@ -20,6 +20,8 @@
 #include "GyverTimer.h"
 #include <WiFiUdp.h>
 
+#include <EEPROM.h>
+
 // Wifi
 
 const char* ssid = "ACS-WIFI";
@@ -61,13 +63,16 @@ AsyncWebServer server(80);
 const int num = 25;
 uint16_t res[num];
 
-String car_number = "BO0990OB";
-int car_section=9;
-
 bool plcConnect = false;
 
 short drops = 0;
 short gdrops = 0;
+
+struct memSt {
+  short stepMem;
+  short carS;
+  String carN;
+} memParam;
 
 String fileName = "main";
 
@@ -95,6 +100,11 @@ void writeParamToPLC (int mbIdx, uint16_t val){
   mb.writeHreg(remote, mbIdx, val, NULL, 1);
 }
 
+void inline writeMemStruct(){
+  EEPROM.put(0, memParam);
+  EEPROM.commit();
+}
+
 StaticJsonDocument<512> jsonIN;
 void setPlcParam(){
   if (jsonIN["startCButton"]) {if(jsonIN["startCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<0);} else {writeParamToPLC(1, res[1]&=~(1<<0));}}
@@ -112,8 +122,8 @@ void setPlcParam(){
   if (jsonIN["param_5"]) {writeParamToPLC(17, jsonIN["param_5"]);}
   if (jsonIN["param_6"]) {writeParamToPLC(18, jsonIN["param_6"]);}
   if (jsonIN["param_7"]) {writeParamToPLC(19, jsonIN["param_7"]);}
-  if (jsonIN["car_section"]) {car_section = jsonIN["car_section"];}
-  if (jsonIN["car_number"]) {String mem = jsonIN["car_number"]; car_number = mem;}
+  if (jsonIN["car_section"]) {memParam.carS = jsonIN["car_section"]; writeMemStruct();}
+  if (jsonIN["car_number"]) {String temp = jsonIN["car_number"]; memParam.carN = temp;  writeMemStruct();}
   if (jsonIN["option"]) {writeParamToPLC(10, jsonIN["option"]);}
 }
 
@@ -131,8 +141,8 @@ void getJsonPlcData(){
   jsonOut["WiFi_RSSI"] = WiFi.RSSI();
   if (jsonIN["needAllData"] && jsonIN["needAllData"] == true) {
     jsonIN["needAllData"] = false;
-    jsonOut["car_number"] = car_number;
-    jsonOut["car_section"] = car_section;
+    jsonOut["car_number"] = memParam.carN;
+    jsonOut["car_section"] = memParam.carS;
     jsonOut["param_0"] = res[12];
     jsonOut["param_1"] = res[13];
     jsonOut["param_2"] = res[14];
@@ -159,6 +169,12 @@ void setup(){
       return;
     }
   #endif
+
+  EEPROM.begin(24);
+  EEPROM.get(0, memParam);
+  // Serial.println("");
+  // Serial.println((String) memParam.carN + " - " + memParam.carS + " - " + memParam.stepMem);
+
   // Connect to Wi-Fi
   // WiFi.mode(WIFI_AP_STA);
   WiFi.mode(WIFI_STA);
@@ -190,30 +206,40 @@ void setup(){
     for (short i = 0; i < (*(&http_username + 1) - http_username); i++){
       // const char* a = http_username[0];
       // Serial.println((String)http_username[i]+" : "+http_password[i]);
-      
+      // Serial.println(request->client()->connected());
+      for (short i = 0; i <= request->headers(); i++) {
+        Serial.println(request->header(i));
+      }
+      // request->getHeader()
       if(request->authenticate(http_username[i], http_password[i])){
+        // request->client()->
         valid = true;
         break;
       }
     }
+
     if (!valid) return request->requestAuthentication();
     request->send(SPIFFS, "/main.html", "text/html");
   });
 
-  server.on("^\\/[\\w]+\\.ico$", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/"+fileName+".ico", "image/png");
-  });
-  
-
-  server.on("^\\/[\\w]+\\.css$", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(SPIFFS, "/"+fileName+".css", "text/css");
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/main.ico", "image/png");
   });
 
-  server.on("^\\/[\\w]+\\.js$", HTTP_GET, [](AsyncWebServerRequest *request){
-      // request->send(SPIFFS, "/"+fileName+".js", "text/javascript");
-      // request->client()->disconnected();
-      // request->client()->close(true);
-      request->send(401);
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    // Serial.println(request->client()->);
+    for (short i = 0; i <= request->headers(); i++) {
+      Serial.println(request->header(i));
+    }
+    request->send(SPIFFS, "/main.css", "text/css");
+  });
+
+  // server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   request->send(SPIFFS, "/main.js", "text/javascript");
+  // });
+
+    server.on("^\\/[\\w]+\\.(js|html)$", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(SPIFFS, "/main.js", "text/javascript");
   });
 
   server.on("/Connect", HTTP_POST,
@@ -270,6 +296,28 @@ void setup(){
   mb.client();
 }
 
+StaticJsonDocument<512> jsonSD;
+void inline writeToSD() {
+  jsonSD = {};
+  jsonSD["carN"] = memParam.carN;
+  jsonSD["carS"] = memParam.carS;
+  switch(res[24]){
+    case 0 : jsonSD["val"] = ((uint32_t)res[3] << 16) | res[2];
+    break;
+    case 1 : jsonSD["val"] = ((uint32_t)res[5] << 16) | res[4];
+    break;
+    case 2 : jsonSD["val"] = ((uint32_t)res[7] << 16) | res[6];
+    break;
+    case 3 : jsonSD["val"] = ((uint32_t)res[9] << 16) | res[8];
+    break;    
+  }
+  //...
+
+  //...
+
+  jsonSD = {};
+}
+
 bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbus Transaction callback
   if (event != Modbus::EX_SUCCESS) { // If transaction got an error
     // Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
@@ -283,9 +331,19 @@ bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbu
       mb.dropTransactions();              // Cancel all waiting transactions
     }
   }
+
+  if (memParam.stepMem == 11 && res[0] != 11){
+    writeToSD();
+  }
+
+  if (memParam.stepMem != res[0]){
+    memParam.stepMem = res[0];
+    writeMemStruct();
+  }
+
   return true;
 }
-
+    
 void loop(){
 
   #ifdef ESP8266
