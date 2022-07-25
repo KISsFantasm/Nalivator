@@ -11,6 +11,7 @@
         <div class="load hidden" id="connect_frame"></div>
         <div class="load_txt hidden" id="connect_text">Connecting</div>
         <div id="mainW">
+            <span>Ви:</span><span id="accessLabel"></span>
             <table>
                 <tr>
                     <table class="mainButtons">
@@ -217,12 +218,62 @@
                             <button onpointerdown="saveParam()" class="setting"> Зберегти </button>
                         </div>
                     </td>
+                    <td>
+                        <div> 
+                            <button onpointerdown="changeSettingWindow()" class="setting">Головна</button>
+                        </div>
+                    </td>
                 </tr>
                 <tr>
                     <td>
                         <div> 
-                            <button onpointerdown="changeSettingWindow()"  class="setting">На головну</button>
+                            <button onpointerdown="changeRecordWindow()" class="setting">Записи</button>
                         </div>
+                    </td>
+                    <td>
+                        <div> 
+                            <button onpointerdown="logout()" class="setting">Logout</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="recordW" class="hidden">
+            <table style="text-align: left; margin-left: 4vw;">
+                <tr style="height:5vh;">
+                    <td>
+                        <select id="chartCar" style="height:5vh; width: 90vw; font-size: 4vh;" onchange="setCar(this.value)">
+                            <option value="empty" disabled selected hidden>Виберіть машину</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr style="height:5vh;">
+                    <td>
+                        <select disabled id="chartSection" style="height:5vh; width: 90vw; font-size: 4vh;" onchange="setSection(this.value)">
+                            <option value="empty" disabled selected hidden>Виберіть секцію</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr style="height:5vh; ">
+                    <td>
+                        <select disabled id="chartDate" style="height:5vh; width: 90vw; font-size: 4vh;" onchange="setDate(this.value);">
+                            <option value="empty" disabled selected hidden>Виберіть дату</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id="chartDiv" style="width: 90vw; height: 57vh; top:21vh; background-color: white;"> </div>
+                    </td>
+                </tr>
+                <tr style="height:5vh;">
+                    <td>
+                        <button onpointerdown="" class="setting">Обновити</button>
+                    </td>
+                </tr>
+                <tr style="height:5vh;">
+                    <td>
+                        <button onpointerdown="changeRecordWindow()" class="setting">Повернутися</button>
                     </td>
                 </tr>
             </table>

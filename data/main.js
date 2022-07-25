@@ -7,10 +7,11 @@ let validSection = true;
 let numParam = 8;
 let first = true;
 
-let mainW, settingW, pass, loadFrame, loadText, connectFrame, connectText;
+let mainW, settingW, recordW, pass, loadFrame, loadText, connectFrame, connectText;
 let loadWindow = [];
 let connectWindow = [];
 
+let accessLabel;
 let b1, b2, b3, b4, doseB;
 let selector, carN, carS;
 let par0, par1, par2, par3, par4, par5, par6, par7;
@@ -46,13 +47,15 @@ function initParams(){
 
     mainW = document.getElementById("mainW");
     settingW = document.getElementById("settingW");
-    chartW = document.getElementById("chartW");
+    recordW = document.getElementById("recordW");
     pass = document.getElementById('password');
 
     loadFrame = document.getElementById('load_frame');
     loadText = document.getElementById('load_text');
     connectFrame = document.getElementById('connect_frame');
     connectText = document.getElementById('connect_text');
+
+    accessLabel = document.getElementById('accessLabel');
 
     paramArray = [par0, par1, par2, par3, par4, par5, par6, par7];
     loadWindow = [loadFrame, loadText];
@@ -160,6 +163,8 @@ function refreshImage(){
 }
 
 function mainBAction(actionName, action){
+    if (step == 0 && "startCButton" && !validInput(carN, 'car')) return;
+    if (step == 6 && "startSButton" && !validInput(carS, 'section','number')) return;
     carN.disabled = true;
     carS.disabled = true;
     selector.disabled = true;
@@ -177,6 +182,10 @@ function setOption(idx){
 
 function changeSettingWindow() {
     multiActionClass('toggle', [mainW,settingW], ['hidden']);
+}
+
+function changeRecordWindow() {
+    multiActionClass('toggle', [settingW,recordW], ['hidden']);
 }
 
 function saveParam(){
@@ -238,6 +247,12 @@ function setPLCValue(respObj){
         }
     }
     // if (carN.value != respObj['car_number']) carN.value = respObj['car_number'];
+    let label;
+    switch(respObj['access']){
+        case "guest": label = "Гість"; break;
+        case "operator": label = "Оператор"; break;
+    }
+    accessLabel.innerHTML = label;
     setOption(respObj['option']);
     if (respObj['plc_connect'] == false) {setConnectWindow();} else {clearConnectWindow();}
     val0.innerHTML = parseFloat(respObj['val_0'])/1000;
@@ -314,7 +329,7 @@ function zeroConfirm(){
 
 function sendPLC(jsObj, func){
     request++;
-    let uri = "/Connect";
+    let uri = "/ESP";
     let xhr = new XMLHttpRequest();
     if (jsObj) {uri += "?json="+jsObj;} 
     xhr.open("POST", uri, true);
@@ -330,6 +345,10 @@ function sendPLC(jsObj, func){
         }
     };
     xhr.send();
+}
+
+function logout(){
+    window.location.assign("/LogIn");
 }
 
 function changeStatus(step){
