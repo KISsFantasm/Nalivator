@@ -50,6 +50,24 @@ tr{padding-top: 1vh; width: inherit;}
 
 .paramWindow{height: 50vh; overflow-y: scroll; overflow-x: hidden; border: 2px solid black; margin-left: 1vw;}
 
+.recordList{
+    width: 85vw; 
+    height: 50vh; 
+    top:21vh; 
+    background-color: white;
+}
+
+.recordSelector{
+    height:5vh; 
+    width: 85vw; 
+    font-size: 4vh;
+}
+
+.recordTable{
+    width: 93vw; 
+    margin-left: 7vw;
+}
+
 button {
     position: relative; 
     display: inline-block; 
@@ -110,6 +128,13 @@ button.setting{
     left: 4.5vw;
     width: 45vw;
     margin-top: 5vh;
+    font-size: 4vh;
+    text-align: center;
+}
+
+button.record{
+    width: 85vw;
+    margin-top: 3vh;
     font-size: 4vh;
     text-align: center;
 }

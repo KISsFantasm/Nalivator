@@ -6,7 +6,103 @@
         <script src="script.js"></script>
     </head>
     <body>
-        Setting
-        <div style="position: absolute; top:0; left:0;"><input style="width:10vw; height:10vh" type="button" value="exit" onclick="logout()"></div>
+        <div>
+            <div> Налаштування WiFi: </div>
+            <table class="fontSize">
+                <tbody>
+                    <tr>
+                        <td>IP:</td>
+                        <td><input maxlength="3" id="wIP0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wIP1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wIP2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wIP3" class="short"></td>
+                    </tr>
+                    <tr>
+                        <td>Gate:</td>
+                        <td><input maxlength="3" id="wGate0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wGate1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wGate2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wGate3" class="short"></td>
+                    </tr>
+                    <tr>
+                        <td>Mask:</td>
+                        <td><input maxlength="3" id="wMask0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wMask1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wMask2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="wMask3" class="short"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="fontSize">
+                <tr>
+                    <td> WiFi Ssid: </td>
+                    <td> <input maxlength="15" class="inputStr" id="wifiSsid"> </td>
+                </tr>
+                <tr>
+                    <td> WiFi Password: </td>
+                    <td> <input maxlength="15" class="inputStr" id="wifiPass"> </td>
+                </tr>
+            </table>
+            <div> Налаштування Точки доступу: </div>
+            <table class="fontSize">
+                <tbody>
+                    <tr>
+                        <td>IP:</td>
+                        <td><input maxlength="3" id="apIP0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apIP1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apIP2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apIP3" class="short"></td>
+                    </tr>
+                    <tr>
+                        <td>Gate:</td>
+                        <td><input maxlength="3" id="apGate0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apGate1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apGate2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apGate3" class="short"></td>
+                    </tr>
+                    <tr>
+                        <td>Mask:</td>
+                        <td><input maxlength="3" id="apMask0" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apMask1" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apMask2" class="short"></td>
+                        <td>.</td>
+                        <td><input maxlength="3" id="apMask3" class="short"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="fontSize">
+                <tr>
+                    <td> AP Ssid: </td>
+                    <td> <input maxlength="15" class="inputStr" id="apSsid"> </td>
+                </tr>
+                <tr>
+                    <td> AP Password: </td>
+                    <td> <input maxlength="15" class="inputStr" id="apPass"> </td>
+                </tr>
+            </table>
+            <div>
+                Включити AP
+                <input id="checkAP" class="checkBox" type="checkbox">
+            </div>
+            <div><input class="button" type="button" onclick="save();" value="Зберегти налаштування"></div>
+            <div><input class="button" type="button" onclick="logout();" value="Вийти"></div>
+        </div>
     </body>
 </html>

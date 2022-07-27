@@ -21,32 +21,33 @@
 #include <WiFiUdp.h>
 
 #include <EEPROM.h>
+#include "string"
 
 // Wifi
 
-const char* ssid = "ACS-WIFI";
-const char* password = "asuandkvpia";
+// const char* ssid = "ACS-WIFI";
+// const char* password = "asuandkvpia";
 
 const char* http_username[] = {"admin","operator","guest"};
 const char* http_password[] = {"","",""};
 
-#ifdef ESP8266
-  short wifiIp[4] = {192,168,10,198};
-#else
-  short wifiIp[4] = {192,168,10,205}; 
-#endif
+// #ifdef ESP8266
+//   short wifiIp[4] = {192,168,10,198};
+// #else
+//   short wifiIp[4] = {192,168,10,205}; 
+// #endif
 
-short wifiGateway[4] = {192,168,10,1}; 
-short wifiSubnet[4] = {255,255,255,0}; 
+// short wifiGateway[4] = {192,168,10,1}; 
+// short wifiSubnet[4] = {255,255,255,0}; 
 
 // AP
 
-const char* espSsid = "ESP_Nalivator";
-const char* espPassword = "ESPNalivator";
+// const char* espSsid = "ESP_default_4_150";
+// const char* espPassword = "espdefault";
 
-short apIp[4] = {192,168,4,150}; 
-short apGateway[4] = {192,168,4,1}; 
-short apSubnet[4] = {255,255,255,0}; 
+// short apIp[4] = {192,168,4,150}; 
+// short apGateway[4] = {192,168,4,1}; 
+// short apSubnet[4] = {255,255,255,0}; 
 
 //Timer
 GTimer readTimer(MS, 750);
@@ -68,10 +69,18 @@ short gdrops = 0;
 struct memSt {
   short stepMem;
   short carS;
-  String carN;
+  char carN[11];
   short wIP[4];
   short wGate[4];
   short wMask[4];
+  char wSsid[16];
+  char wPass[16];
+  short apIP[4];
+  short apGate[4];
+  short apMask[4];
+  char apSsid[16];
+  char apPass[16];
+  bool apEnable;
 } memParam;
 
 String fileName = "main";
@@ -125,7 +134,7 @@ void setPlcParam(){
   if (jsonIn["param_6"]) {writeParamToPLC(18, jsonIn["param_6"]);}
   if (jsonIn["param_7"]) {writeParamToPLC(19, jsonIn["param_7"]);}
   if (jsonIn["car_section"]) {memParam.carS = jsonIn["car_section"]; writeMemStruct();}
-  if (jsonIn["car_number"]) {String temp = jsonIn["car_number"]; memParam.carN = temp;  writeMemStruct();}
+  if (jsonIn["car_number"]) {String temp = jsonIn["car_number"]; temp.toCharArray(memParam.carN, 11);  writeMemStruct();}
   if (jsonIn["option"]) {writeParamToPLC(10, jsonIn["option"]);}
 }
 
@@ -139,7 +148,8 @@ void getJsonPlcData(){
   jsonOut["progStep"] = res[0];
   jsonOut["current"] = res[24];
   jsonOut["option"] = res[10];
-  jsonOut["plc_connect"] = plcConnect;
+  // jsonOut["plc_connect"] = plcConnect;
+  jsonOut["plc_connect"] = true;
   jsonOut["WiFi_RSSI"] = WiFi.RSSI();
   if (jsonIn["needAllData"] && jsonIn["needAllData"] == true) {
     jsonIn["needAllData"] = false;
@@ -211,17 +221,23 @@ void setup(){
     }
   #endif
 
-  EEPROM.begin(24);
+  EEPROM.begin(140);
   EEPROM.get(0, memParam);
 
   // Connect to Wi-Fi
-  // WiFi.mode(WIFI_AP_STA);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_AP_STA);
+  // WiFi.begin(ssid, password);
+  // WiFi.config(
+  //   IPAddress(wifiIp[0],wifiIp[1],wifiIp[2],wifiIp[3]),
+  //   IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
+  //   IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
+  // );
+
+  WiFi.begin(memParam.wSsid, memParam.wPass);
   WiFi.config(
-    IPAddress(wifiIp[0],wifiIp[1],wifiIp[2],wifiIp[3]),
-    IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
-    IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
+    IPAddress(memParam.wIP[0],memParam.wIP[1],memParam.wIP[2],memParam.wIP[3]),
+    IPAddress(memParam.wGate[0],memParam.wGate[1],memParam.wGate[2],memParam.wGate[3]),
+    IPAddress(memParam.wMask[0],memParam.wMask[1],memParam.wMask[2],memParam.wMask[3])
   );
 
   // WiFi.softAP(espSsid, espPassword);
@@ -236,9 +252,19 @@ void setup(){
     Serial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  WiFi.enableAP(memParam.apEnable);
+  if(memParam.apEnable){
+    WiFi.softAP(memParam.apSsid, memParam.apPass);
+    WiFi.softAPConfig(
+      IPAddress(memParam.apIP[0],memParam.apIP[1],memParam.apIP[2],memParam.apIP[3]),
+      IPAddress(memParam.apGate[0],memParam.apGate[1],memParam.apGate[2],memParam.apGate[3]),
+      IPAddress(memParam.apMask[0],memParam.apMask[1],memParam.apMask[2],memParam.apMask[3])
+    );
+  }
+
+  // Serial.println("");
+  // Serial.println("IP address: ");
+  // Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     getIOSAuth(request);
@@ -268,7 +294,7 @@ void setup(){
         ref = request->header(i);
       }
     }
-    if (uri && ref == "http://192.168.10.205/"){
+    if (uri && ref != ""){
       if (userName == "admin") uri = "/setting"+uri; else uri = "/main"+uri;  
       request->send(SPIFFS, uri, "text/javascript");
     } else {
@@ -318,6 +344,60 @@ void setup(){
     jsonOut["access"] = userName;
     serializeJson(jsonOut, *response);
     request->send(response);
+  });
+
+  server.on("/settingLoad", HTTP_POST, [](AsyncWebServerRequest *request) {
+    String str;
+    for(short i=0;i<4;i++){
+      str+=(String)memParam.wIP[i]+"-"+memParam.wGate[i]+"-"+memParam.wMask[i]+"-"+memParam.apIP[i]+"-"+memParam.apGate[i]+"-"+memParam.apMask[i]+"|";
+    }
+    str+=(String)memParam.apEnable+"|"+memParam.wSsid+"|"+memParam.wPass+"|"+memParam.apSsid+"|"+memParam.apPass;
+    request->send(200, String(), str);
+  });
+
+  server.on("/settingSave", HTTP_POST, [](AsyncWebServerRequest *request) {
+    for (size_t  i = 0 ; i < request->args(); i++){
+      AsyncWebParameter *par = request->getParam(i);
+      if (par->name() == "paramStr") {
+        String str = par->value();
+        String val, num;
+        short idx, k;
+        for(short i=0;i<6;i++){
+          idx = str.indexOf("|");
+          val = str.substring(0, idx);
+          str = str.substring(idx+1, str.length());
+          for(short j=0;j<4;j++){
+            k = val.indexOf(".");
+            num = val.substring(0, k);
+            val = val.substring(k+1, val.length());
+            switch(i){
+              case 0: memParam.wIP[j] = num.toInt(); break;
+              case 1: memParam.wGate[j] = num.toInt(); break;
+              case 2: memParam.wMask[j] = num.toInt(); break;
+              case 3: memParam.apIP[j] = num.toInt(); break;
+              case 4: memParam.apGate[j] = num.toInt(); break;
+              case 5: memParam.apMask[j] = num.toInt(); break;
+            }
+          }
+        }
+        for(short i=0;i<5;i++){
+          idx = str.indexOf("|");
+          val = str.substring(0, idx);
+          str = str.substring(idx+1, str.length());
+          switch(i){
+            case 0: memParam.apEnable = val == "true" ? true : false; break;
+            case 1: val.toCharArray(memParam.wSsid,16); break;
+            case 2: val.toCharArray(memParam.wPass,16); break;
+            case 3: val.toCharArray(memParam.apSsid,16); break;
+            case 4: val.toCharArray(memParam.apPass,16); break;
+          }
+        }
+        writeMemStruct();
+        delay(2000);
+        ESP.restart();
+      }
+    }
+    request->send(200);
   });
 
   #ifdef ESP8266
@@ -409,7 +489,7 @@ bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbu
 }
     
 void loop(){
-
+  
   #ifdef ESP8266
     ArduinoOTA.handle();
   #endif
@@ -421,8 +501,6 @@ void loop(){
       mb.connect(remote);
     }
     mb.task();
-    // Serial.println(ESP.getFreeHeap());
   }
-
 
 }
