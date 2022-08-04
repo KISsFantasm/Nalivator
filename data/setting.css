@@ -1,26 +1,27 @@
 body {
     background-color: #959bbf;
-    font-size: 3vh;
+    font-size: 2.5vh;
 }
 
 .fontSize{
-    font-size: 3vh;
+    font-size: 2.5vh;
 }
 
 .inputStr{
-    font-size: 3vh;
+    font-size: 2.5vh;
     width: 50vw;
 }
 
 .checkBox{
     margin-top: 2vh;
+    margin-left: 2vw;
     width: 3vw;
     height: 3vh;
     transform:scale(2);
 }
 
 .short{
-    font-size: 2.6vh;
+    font-size: 2.3vh;
     width: 15vw;
 }
 

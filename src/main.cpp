@@ -23,41 +23,23 @@
 #include <EEPROM.h>
 #include "string"
 
-// Wifi
+#ifndef ESP8266
+  #include "SDExplorer.h"
+#endif
 
-// const char* ssid = "ACS-WIFI";
-// const char* password = "asuandkvpia";
+#include "time.h"
+struct tm timeinfo;
 
 const char* http_username[] = {"admin","operator","guest"};
-const char* http_password[] = {"","",""};
-
-// #ifdef ESP8266
-//   short wifiIp[4] = {192,168,10,198};
-// #else
-//   short wifiIp[4] = {192,168,10,205}; 
-// #endif
-
-// short wifiGateway[4] = {192,168,10,1}; 
-// short wifiSubnet[4] = {255,255,255,0}; 
-
-// AP
-
-// const char* espSsid = "ESP_default_4_150";
-// const char* espPassword = "espdefault";
-
-// short apIp[4] = {192,168,4,150}; 
-// short apGateway[4] = {192,168,4,1}; 
-// short apSubnet[4] = {255,255,255,0}; 
+const char* http_password[] = {"adminesp","55555",""};
 
 //Timer
 GTimer readTimer(MS, 750);
 
 // Modbus Hreg Offset
 const int REG = 0;               
-IPAddress remote(192, 168, 10, 178);  // Address of Modbus Slave device
-// IPAddress remote(192, 168, 10, 224);
-ModbusIP mb;  //ModbusIP object
 
+ModbusIP mb;  //ModbusIP object
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
@@ -67,53 +49,85 @@ short drops = 0;
 short gdrops = 0;
 
 struct memSt {
-  short stepMem;
-  short carS;
-  char carN[11];
-  short wIP[4];
-  short wGate[4];
-  short wMask[4];
-  char wSsid[16];
-  char wPass[16];
-  short apIP[4];
-  short apGate[4];
-  short apMask[4];
-  char apSsid[16];
-  char apPass[16];
-  bool apEnable;
-} memParam;
+  short stepMem = 0;
+  short carS = 0;
+  char carN[11] = {'X','X','0','0','0','0','X','X'};
+  short wIP[4] = {192,168,10,205};
+  short wGate[4] = {192,168,10,1};
+  short wMask[4] = {255,255,255,0};
+  char wSsid[16] = {'A','C','S','-','W','I','F','I'};
+  char wPass[16] = {'a','s','u','a','n','d','k','v','p','i','a'};
+  short apIP[4] = {192,168,4,150};
+  short apGate[4] = {192,168,4,1};
+  short apMask[4] = {255,255,255,0};
+  char apSsid[16] = {'E','S','P','_','D','e','f','a','u','l','t','_','A','P'};
+  char apPass[16] = {'e','s','p','a','d','m','i','n'};
+  bool apEnable = true;
+  char date[20] = {'0','0','-','0','0','-','0','0','0','0','_','0','0','-','0','0','-','0','0'};
+  short remote[4] = {192,168,10,178};
+  char key[1] = {'Y'};
+} memParam, defParam;
+
+char clientDate[20];
 
 String fileName = "main";
 
 const int num = 25;
-// #0 8bit - progStep; 8bit - Empty;
-// #1 8bit - buttons; 8bit - Empty;
-// #2,3 4byte - fcount01;
-// #4,5 4byte - fcount02;
-// #6,7 4byte - fcount03;
-// #8,9 4byte - fcount04;
-// #10 2byte - mode;
-// #11 2byte - memMode;
-// #12 2byte - maxFlow;
-// #13 2byte - gPImp;
-// #14 2byte - maxVOut;
-// #15 2byte - midVOut;
-// #16 2byte - minVOut;
-// #17 2byte - minKg;
-// #18 2byte - drainageTime;
-// #19 2byte - prepareTime;
-// #20,21 4byte - ftCounter;
-// #22,23 4byte - counterMem;
-// #24 8bit - currentPos; 8bit - Empty;
+/* #0 8bit - progStep; 8bit - Empty;
+#1 8bit - buttons; 8bit - Empty;
+#2,3 4byte - fcount01;
+#4,5 4byte - fcount02;
+#6,7 4byte - fcount03;
+#8,9 4byte - fcount04;
+#10 2byte - mode;
+#11 2byte - memMode;
+#12 2byte - maxFlow;
+#13 2byte - gPImp;
+#14 2byte - maxVOut;
+#15 2byte - midVOut;
+#16 2byte - minVOut;
+#17 2byte - minKg;
+#18 2byte - drainageTime;
+#19 2byte - prepareTime;
+#20,21 4byte - ftCounter;
+#22,23 4byte - counterMem;
+#24 8bit - currentPos; 8bit - Empty; */
 uint16_t res[num];
 
 void writeParamToPLC (int mbIdx, uint16_t val){
-  mb.writeHreg(remote, mbIdx, val, NULL, 1);
+  mb.writeHreg(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]), mbIdx, val, NULL, 1);
 }
 
 void inline writeMemStruct(){
   EEPROM.put(0, memParam);
   EEPROM.commit();
+}
+
+void delFromSD(){
+  #ifndef ESP8266
+    char recordSrc[50];
+    ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
+    deleteFile(SD, recordSrc);
+    delay(1500);
+  #endif
+}
+
+void inline writeToSD() {
+  #ifndef ESP8266
+    char recordSrc[50];
+    char recordValue[10];
+    uint32_t val;
+    switch(res[24]){
+      case 0 : val = ((uint32_t)res[3] << 16) | res[2]; break;
+      case 1 : val = ((uint32_t)res[5] << 16) | res[4]; break;
+      case 2 : val = ((uint32_t)res[7] << 16) | res[6]; break;
+      case 3 : val = ((uint32_t)res[9] << 16) | res[8]; break;    
+    }
+    ((String)val+" ").toCharArray(recordValue,10);
+    ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
+    appendFile(SD,recordSrc,recordValue);
+    delay(1500);
+  #endif
 }
 
 StaticJsonDocument<512> jsonIn;
@@ -122,7 +136,7 @@ void setPlcParam(){
   if (jsonIn["stopCButton"]) {if(jsonIn["stopCButton"] == "on"){writeParamToPLC(1, res[1]|=1<<1);} else {writeParamToPLC(1, res[1]&=~(1<<1));}}
   if (jsonIn["startSButton"]) {if(jsonIn["startSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<2);} else {writeParamToPLC(1, res[1]&=~(1<<2));}}
   if (jsonIn["stopSButton"]) {if(jsonIn["stopSButton"] == "on"){writeParamToPLC(1, res[1]|=1<<3);} else {writeParamToPLC(1, res[1]&=~(1<<3));}}
-  if (jsonIn["zeroButton"]) {if(jsonIn["zeroButton"] == "on"){writeParamToPLC(1, res[1]|=1<<4);} else {writeParamToPLC(1, res[1]&=~(1<<4));}}
+  if (jsonIn["zeroButton"]) {if(jsonIn["zeroButton"] == "on"){writeParamToPLC(1, res[1]|=1<<4); delFromSD();} else {writeParamToPLC(1, res[1]&=~(1<<4));}}
   if (jsonIn["doseButton"]) {if(jsonIn["doseButton"] == "on"){writeParamToPLC(1, res[1]|=1<<5);} else {writeParamToPLC(1, res[1]&=~(1<<5));}}
   if (jsonIn["flowButton"]) {if(jsonIn["flowButton"] == "on"){writeParamToPLC(1, res[1]|=1<<6);} else {writeParamToPLC(1, res[1]&=~(1<<6));}}
   if (jsonIn["param_0"]) {writeParamToPLC(12, jsonIn["param_0"]);}
@@ -148,8 +162,7 @@ void getJsonPlcData(){
   jsonOut["progStep"] = res[0];
   jsonOut["current"] = res[24];
   jsonOut["option"] = res[10];
-  // jsonOut["plc_connect"] = plcConnect;
-  jsonOut["plc_connect"] = true;
+  jsonOut["plc_connect"] = plcConnect;
   jsonOut["WiFi_RSSI"] = WiFi.RSSI();
   if (jsonIn["needAllData"] && jsonIn["needAllData"] == true) {
     jsonIn["needAllData"] = false;
@@ -221,36 +234,19 @@ void setup(){
     }
   #endif
 
-  EEPROM.begin(140);
+  EEPROM.begin(1024);
   EEPROM.get(0, memParam);
+  if(memParam.key[0] != 'Y') {memParam = defParam; writeMemStruct();}
 
-  // Connect to Wi-Fi
   WiFi.mode(WIFI_AP_STA);
-  // WiFi.begin(ssid, password);
-  // WiFi.config(
-  //   IPAddress(wifiIp[0],wifiIp[1],wifiIp[2],wifiIp[3]),
-  //   IPAddress(wifiGateway[0],wifiGateway[1],wifiGateway[2],wifiGateway[3]),
-  //   IPAddress(wifiSubnet[0],wifiSubnet[1],wifiSubnet[2],wifiSubnet[3])
-  // );
-
   WiFi.begin(memParam.wSsid, memParam.wPass);
   WiFi.config(
     IPAddress(memParam.wIP[0],memParam.wIP[1],memParam.wIP[2],memParam.wIP[3]),
     IPAddress(memParam.wGate[0],memParam.wGate[1],memParam.wGate[2],memParam.wGate[3]),
-    IPAddress(memParam.wMask[0],memParam.wMask[1],memParam.wMask[2],memParam.wMask[3])
+    IPAddress(memParam.wMask[0],memParam.wMask[1],memParam.wMask[2],memParam.wMask[3]),
+    IPAddress(8,8,8,8),
+    IPAddress(8,8,4,4)
   );
-
-  // WiFi.softAP(espSsid, espPassword);
-  // WiFi.softAPConfig(
-  //   IPAddress(apIp[0],apIp[1],apIp[2],apIp[3]),
-  //   IPAddress(apGateway[0],apGateway[1],apGateway[2],apGateway[3]),
-  //   IPAddress(apSubnet[0],apSubnet[1],apSubnet[2],apSubnet[3])
-  // );
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
 
   WiFi.enableAP(memParam.apEnable);
   if(memParam.apEnable){
@@ -262,9 +258,11 @@ void setup(){
     );
   }
 
-  // Serial.println("");
-  // Serial.println("IP address: ");
-  // Serial.println(WiFi.localIP());
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  configTime(0, 0, "pool.ntp.org");
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     getIOSAuth(request);
@@ -324,17 +322,20 @@ void setup(){
     
     if (!auth) return request->requestAuthentication();
 
-    bool setPlcParab = false;
+    bool savePLCParam = false;
     for (size_t  i = 0 ; i < request->args(); i++){
       AsyncWebParameter *par = request->getParam(i);
       if (par->name() == "json" ) {
-        setPlcParab = true;
+        savePLCParam = true;
         deserializeJson(jsonIn, par->value());
+      }
+      if (par->name() == "date" && userName != "guest") {
+        par->value().toCharArray(clientDate, 20);
       }
     }
 
     getJsonPlcData();
-    if(setPlcParab){
+    if(savePLCParam){
       if (userName != "guest") setPlcParam();
       jsonIn = {};
     }
@@ -349,7 +350,7 @@ void setup(){
   server.on("/settingLoad", HTTP_POST, [](AsyncWebServerRequest *request) {
     String str;
     for(short i=0;i<4;i++){
-      str+=(String)memParam.wIP[i]+"-"+memParam.wGate[i]+"-"+memParam.wMask[i]+"-"+memParam.apIP[i]+"-"+memParam.apGate[i]+"-"+memParam.apMask[i]+"|";
+      str+=(String)memParam.wIP[i]+"-"+memParam.wGate[i]+"-"+memParam.wMask[i]+"-"+memParam.apIP[i]+"-"+memParam.apGate[i]+"-"+memParam.apMask[i]+"-"+memParam.remote[i]+"|";
     }
     str+=(String)memParam.apEnable+"|"+memParam.wSsid+"|"+memParam.wPass+"|"+memParam.apSsid+"|"+memParam.apPass;
     request->send(200, String(), str);
@@ -362,7 +363,7 @@ void setup(){
         String str = par->value();
         String val, num;
         short idx, k;
-        for(short i=0;i<6;i++){
+        for(short i=0;i<7;i++){
           idx = str.indexOf("|");
           val = str.substring(0, idx);
           str = str.substring(idx+1, str.length());
@@ -377,6 +378,7 @@ void setup(){
               case 3: memParam.apIP[j] = num.toInt(); break;
               case 4: memParam.apGate[j] = num.toInt(); break;
               case 5: memParam.apMask[j] = num.toInt(); break;
+              case 6: memParam.remote[j] = num.toInt(); break;
             }
           }
         }
@@ -398,6 +400,38 @@ void setup(){
       }
     }
     request->send(200);
+  });
+
+  server.on("/getRecords", HTTP_POST, [](AsyncWebServerRequest *request){
+    AsyncResponseStream *response = request->beginResponseStream("text/html");
+    File root = SD.open("/nalivator");
+    File file = root.openNextFile();
+    while(file){
+      response->print(file.name());
+      file = root.openNextFile();
+      if (file) response->print("/");
+    }
+    request->send(response);
+  });
+
+  server.on("/getRecordData", HTTP_POST, [](AsyncWebServerRequest *request){
+    for (size_t  i = 0 ; i < request->args(); i++){
+      AsyncWebParameter *par = request->getParam(i);
+      if (par->name() == "src" ) {
+        AsyncResponseStream *response = request->beginResponseStream("text/html");
+        char fileName[50];
+        ((String)"/nalivator/"+par->value()).toCharArray(fileName,50);
+        File file = SD.open(fileName);
+        if(!file){request->send(404); return;}
+        while(file.available()){
+          response->write(file.read());
+        }
+        file.close();
+        request->send(response);
+        return;
+      }
+    }
+    request->send(404);
   });
 
   #ifdef ESP8266
@@ -437,54 +471,62 @@ void setup(){
   server.begin();
   mb.client();
 
-  
+  #ifndef ESP8266
+    if(!SD.begin(5)){
+      Serial.println("Card Mount Failed");
+      return;
+    }
+
+    uint8_t cardType = SD.cardType();
+
+    if(cardType == CARD_NONE){
+      Serial.println("No SD card attached");
+      return;
+    }
+
+    Serial.print("SD Card Type: ");
+    if(cardType == CARD_MMC){
+      Serial.println("MMC");
+    } else if(cardType == CARD_SD){
+      Serial.println("SDSC");
+    } else if(cardType == CARD_SDHC){
+      Serial.println("SDHC");
+    } else {
+      Serial.println("UNKNOWN");
+    }
+
+  #endif
 }
 
-StaticJsonDocument<512> jsonSD;
-void inline writeToSD() {
-  jsonSD = {};
-  jsonSD["carN"] = memParam.carN;
-  jsonSD["carS"] = memParam.carS;
-  switch(res[24]){
-    case 0 : jsonSD["val"] = ((uint32_t)res[3] << 16) | res[2];
-    break;
-    case 1 : jsonSD["val"] = ((uint32_t)res[5] << 16) | res[4];
-    break;
-    case 2 : jsonSD["val"] = ((uint32_t)res[7] << 16) | res[6];
-    break;
-    case 3 : jsonSD["val"] = ((uint32_t)res[9] << 16) | res[8];
-    break;    
+void stepWork(){
+  if (memParam.stepMem == 11 && res[0] != 11){
+    writeToSD();
   }
-  //...
-
-  //...
-
-  jsonSD = {};
+  if (memParam.stepMem == 6 && res[0] != 6){
+    if (getLocalTime(&timeinfo)){
+      strftime(memParam.date,20,"%d-%m-%Y_%H-%M-%S",&timeinfo);
+    } else {
+      for(short i = 0; i < 20; i++) memParam.date[i] = clientDate[i];
+    }
+  }
+  if (memParam.stepMem != res[0]){
+    memParam.stepMem = res[0];
+    writeMemStruct();
+  }
 }
 
 bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbus Transaction callback
   if (event != Modbus::EX_SUCCESS) { // If transaction got an error
     // Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
-  } else {
-    drops = 0;
-  }
+  } else {drops = 0;}
   if (event == Modbus::EX_TIMEOUT) {    // If Transaction timeout took place
     drops++;
     if (drops >= 5) {
-      mb.disconnect(remote);              // Close connection to slave and
+      mb.disconnect(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]));              // Close connection to slave and
       mb.dropTransactions();              // Cancel all waiting transactions
     }
   }
-
-  if (memParam.stepMem == 11 && res[0] != 11){
-    writeToSD();
-  }
-
-  if (memParam.stepMem != res[0]){
-    memParam.stepMem = res[0];
-    writeMemStruct();
-  }
-
+  stepWork();
   return true;
 }
     
@@ -495,12 +537,13 @@ void loop(){
   #endif
 
   if (readTimer.isReady()) {
-    if ((plcConnect = mb.isConnected(remote))) {
-      mb.readHreg(remote, REG, res, num, cb, 1);
+    if ((plcConnect = mb.isConnected(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3])))) {
+      mb.readHreg(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]), REG, res, num, cb, 1);
     } else {
-      mb.connect(remote);
+      mb.connect(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]));
     }
     mb.task();
+    // Serial.println((String)ESP.getFreeHeap());
   }
 
 }

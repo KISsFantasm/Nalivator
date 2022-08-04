@@ -256,7 +256,7 @@
                 </tr>
                 <tr style="height:5vh; ">
                     <td>
-                        <select disabled id="chartDate" class="recordSelector" onchange="setDate(this.value);">
+                        <select disabled id="chartDate" class="recordSelector" onchange="setDate(this.value); getRecordData();">
                             <option value="empty" disabled selected hidden>Виберіть дату</option>
                         </select>
                     </td>
@@ -268,7 +268,7 @@
                 </tr>
                 <tr>
                     <td>
-                        <button onpointerdown="" class="record">Обновити</button>
+                        <button onpointerdown="refreshChart()" class="record">Обновити</button>
                     </td>
                 </tr>
                 <tr>

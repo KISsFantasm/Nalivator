@@ -39,6 +39,12 @@ window.onload = function() {
             2: document.getElementById("apMask2"),
             3: document.getElementById("apMask3")
         },
+        remote:{
+            0: document.getElementById("rIP0"),
+            1: document.getElementById("rIP1"),
+            2: document.getElementById("rIP2"),
+            3: document.getElementById("rIP3")
+        },
         checkAP: document.getElementById("checkAP"),
         wifiSsid: document.getElementById("wifiSsid"),
         wifiPass: document.getElementById("wifiPass"),
@@ -79,34 +85,33 @@ function parseResponse(resp){
         inputs.apIP[idx].value=val[3];
         inputs.apGate[idx].value=val[4];
         inputs.apMask[idx].value=val[5];
+        inputs.remote[idx].value=val[6];
     }
 }
 
 function save(){
     let str = "";
     for(idx in inputs){
-        if (idx != "wIP" && idx != "wGate" && idx != "wMask" && idx != "apIP" && idx != "apMask" && idx != "apGate") continue;
+        if (idx != "wIP" && idx != "wGate" && idx != "wMask" && idx != "apIP" && idx != "apMask" && idx != "apGate" && idx != "remote") continue;
         for(i in inputs[idx]){
             let val = parseInt(inputs[idx][i].value);
-            if (!isValid(val,"short")) {return;}
+            if (!isValid(val,"short")) {alert("Некоректне значення адреси"); return;}
             str += val;
             if (i != 3) str += ".";
         }
         str += "|"; 
     }
     str += inputs.checkAP.checked+"|";
-    if(isValid(inputs.wifiSsid.value, "text")) str += inputs.wifiSsid.value+"|"; else return;
-    if(isValid(inputs.wifiPass.value, "text")) str += inputs.wifiPass.value+"|"; else return;
-    if(isValid(inputs.apSsid.value, "text")) str += inputs.apSsid.value+"|"; else return;
-    if(isValid(inputs.apPass.value, "text")) str += inputs.apPass.value+"|"; else return;
+    if(isValid(inputs.wifiSsid.value, "text")) {str += inputs.wifiSsid.value+"|";} else {alert("WiFi Ssid містить неприпустимі символи"); return;};
+    if(isValid(inputs.wifiPass.value, "text")) {str += inputs.wifiPass.value+"|";} else {alert("WiFi Password містить неприпустимі символи"); return;};
+    if(isValid(inputs.apSsid.value, "text")) {str += inputs.apSsid.value+"|";} else {alert("AP Ssid містить неприпустимі символи"); return;};
+    if(isValid(inputs.apPass.value, "text")) {str += inputs.apPass.value+"|";} else {alert("AP Password містить неприпустимі символи"); return;};    
+    if(inputs.apPass.value.length < 8) {alert("AP Пароль має містити від 8 до 15 символів"); return};
     let uri = "/settingSave";
     uri += "?paramStr="+str;
     let xhr = new XMLHttpRequest();
     xhr.open("POST", uri, true);
     xhr.onload = function () {
-        // if (this.status == 200){
-        //     parseResponse(this.response);
-        // }
     };
     xhr.send();
 }

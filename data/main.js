@@ -6,8 +6,12 @@ let validCar = true;
 let validSection = true;
 let numParam = 8;
 let first = true;
+let chartData = {};
+let chartRefresh = false;
+let currentChart = {'car' : '', 'section' : '', 'date' : ''};
 
 let mainW, settingW, recordW, pass, loadFrame, loadText, connectFrame, connectText;
+let chartCar, chartSection, chartDate;
 let loadWindow = [];
 let connectWindow = [];
 
@@ -48,6 +52,9 @@ function initParams(){
     mainW = document.getElementById("mainW");
     settingW = document.getElementById("settingW");
     recordW = document.getElementById("recordW");
+    chartCar = document.getElementById("chartCar");
+    chartSection = document.getElementById("chartSection");
+    chartDate = document.getElementById("chartDate");
     pass = document.getElementById('password');
 
     loadFrame = document.getElementById('load_frame');
@@ -246,7 +253,6 @@ function setPLCValue(respObj){
             paramArray[idx].value = paramArray[idx].valueAsNumber;
         }
     }
-    // if (carN.value != respObj['car_number']) carN.value = respObj['car_number'];
     let label;
     switch(respObj['access']){
         case "guest": label = "Гість"; break;
@@ -331,7 +337,18 @@ function sendPLC(jsObj, func){
     request++;
     let uri = "/ESP";
     let xhr = new XMLHttpRequest();
-    if (jsObj) {uri += "?json="+jsObj;} 
+    if (jsObj) {
+        let date = new Date();
+        let dateStr;
+        dateStr = ("0" + date.getDate()).slice(-2) + "-";
+        dateStr += ("0" + (date.getMonth()+1)).slice(-2) + "-";
+        dateStr += date.getFullYear() + "_";
+        dateStr += ("0" + (date.getHours()+date.getTimezoneOffset()/60)).slice(-2) + "-";
+        dateStr += ("0" + date.getMinutes()).slice(-2) + "-";
+        dateStr += ("0" + date.getSeconds()).slice(-2);
+        uri += "?date="+dateStr;
+        uri += "&json="+jsObj;
+    } 
     xhr.open("POST", uri, true);
     xhr.func = func;
     xhr.onload = function () {
@@ -410,3 +427,113 @@ function changeStatus(step){
         return 'Завершення';
     }
 }
+
+function getChartRecords(){
+    let uri = "/getRecords";
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", uri, true);
+    xhr.onload = function () {
+        if (this.status == 200){
+            parseChartData(this.response);
+        }
+    };
+    xhr.send();
+}
+
+function getRecordData(){
+    let uri = "/getRecordData";
+    let xhr = new XMLHttpRequest();
+    uri += "?src="+chartDate.value+"_"+chartCar.value+"_"+chartSection.value+".txt";
+    xhr.open("POST", uri, true);
+    xhr.onload = function () {
+        if (this.status == 200){
+            buildChart(this.response);
+        }
+    };
+    xhr.send();
+}
+
+function parseChartData(resp){
+    let records = resp.split('/');
+    for(let i in records){
+    // 0 - date, 1 - time, 2 - car, 3 - section
+    let record = records[i];
+    if (record == "") continue;
+    let data = record.split('_');
+    data[3] = data[3].split('.')[0];
+    if (data[0] == undefined || data[1] == undefined || data[2] == undefined || data[3] == undefined) {chartData = {}; return;}
+    let date = data[0] + "_" + data[1];
+    if (!chartData[data[2]]) chartData[data[2]] = {};
+    if (!chartData[data[2]][data[3]]) chartData[data[2]][data[3]] = {};
+    chartData[data[2]][data[3]][date] = true;
+    }
+    for(let car in chartData) createOption(chartCar,car);
+    if (chartRefresh) reloadChartData();
+    clearLoadWindow();
+}
+    
+function setCar(carId){
+    document.getElementById('chartDiv').innerHTML = "";
+    setEmptyOption(chartSection, 1);
+    chartSection.disabled = false;
+    setEmptyOption(chartDate, 2)
+    currentChart = {'car' : carId, 'section' : '', 'date' : ''}; 
+    for(let section in chartData[carId]) createOption(chartSection,section);
+}
+    
+function setSection(sectionId){
+    document.getElementById('chartDiv').innerHTML = "";
+    setEmptyOption(chartDate, 2);
+    chartDate.disabled = false;
+    currentChart = {'car' : currentChart['car'], 'section' : sectionId, 'date' : ''}; 
+    for(let date in chartData[currentChart['car']][sectionId]) createOption(chartDate,date);
+}
+    
+function setDate(DateId){
+    document.getElementById('chartDiv').innerHTML = "";
+    currentChart = {'car' : currentChart['car'], 'section' : currentChart['section'], 'date' : DateId};
+}
+
+function buildChart(resp){
+    let valArray = resp.split(' ');
+    let log = document.getElementById('chartDiv');
+    log.innerHTML = "";
+    for(let idx in valArray){
+    if (valArray[idx] == "") break;
+    let val;
+    if (idx != 0) {
+    log.innerHTML += "<br>";
+    val = parseFloat(valArray[idx]) - parseFloat(valArray[idx-1]);
+    } else {
+    val = parseFloat(valArray[idx]);
+    }
+    log.innerHTML += "Налив " + (parseInt(idx) + 1) + " - " + val/1000 + " літрів"; 
+    }
+    clearLoadWindow();
+}
+    
+function refreshChart(){
+    setEmptyOption(chartCar, 0);
+    chartCar.disabled = false;
+    setEmptyOption(chartSection, 1);
+    setEmptyOption(chartDate, 2);
+    chartData = {};
+    chartRefresh = true;
+    getChartRecords();
+}
+    
+function reloadChartData(){
+    chartRefresh = false;
+    let mem = currentChart;
+    if (mem['car'] == "" || chartData[mem['car']] == undefined) return;
+    setCar(mem['car']);
+    chartCar.value = mem['car'];
+    if (mem['section'] == "" || chartData[mem['car']][mem['section']] == undefined) return;
+    setSection(mem['section']);
+    chartSection.value = mem['section'];
+    if (mem['date'] == "" || chartData[mem['car']][mem['section']][mem['date']] == undefined) return;
+    setDate(mem['date']);
+    chartDate.value = mem['date'];
+    getRecordData();
+}
+

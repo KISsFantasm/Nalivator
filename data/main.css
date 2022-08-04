@@ -52,9 +52,12 @@ tr{padding-top: 1vh; width: inherit;}
 
 .recordList{
     width: 85vw; 
-    height: 50vh; 
-    top:21vh; 
+    height: 49vh; 
+    font-size: 4vh;
+    padding-left: 1vw;
+    padding-top: 1vh; 
     background-color: white;
+    overflow: auto;
 }
 
 .recordSelector{
