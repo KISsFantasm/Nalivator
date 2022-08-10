@@ -35,7 +35,8 @@
 HTTPClient http;
 WiFiClient client; 
 
-const char *HOST_NAME = "http://192.168.10.13:81";
+const char *HOST_NAME = "192.168.10.13";
+uint16_t HOSP_PORT = 81;
 const char *PATH_NAME = "/fantasm/esp/server.php";
 
 #include "time.h"
@@ -60,6 +61,8 @@ bool plcConnect = false;
 
 short drops = 0;
 short gdrops = 0;
+
+const uint8_t ssSdPin = 5U;
 
 struct memSt {
   short stepMem = 0;
@@ -296,7 +299,7 @@ void setup(){
   }
   configTime(0, 0, "pool.ntp.org");
 
-  if(!SD.begin(5)){
+  if(!SD.begin(ssSdPin)){
     Serial.println("Card Mount Failed");
     return;
   }
@@ -504,13 +507,13 @@ void setup(){
     });
     ArduinoOTA.begin();
   #endif
-  // Start server
-  http.begin(client,(String)HOST_NAME + PATH_NAME);
+
   server.begin();
   mb.client();
 }
 
 void saveSdToDatabase(){
+  http.begin(client, HOST_NAME, HOSP_PORT, PATH_NAME, true);
   File root = SD.open("/toDatabase");
   File file = root.openNextFile();
   while(file){
@@ -520,7 +523,7 @@ void saveSdToDatabase(){
     char name[36];
     ((String)file.name()).toCharArray(name, 36);
 
-    int httpCode = http.POST((String)"{\"name\":\""+name+"\"}");
+    int httpCode = http.POST((String)"{\"key\":\"firstESP\",\"name\":\""+name+"\"}");
     if(httpCode == HTTP_CODE_OK) {
 
       File file2 = SD.open(filePath);
@@ -530,7 +533,7 @@ void saveSdToDatabase(){
       char value[buf.length()];
       buf.toCharArray(value,buf.length()+1);
 
-      int httpCode2 = http.POST((String)"{\"name\":\""+name+"\",\"value\":\""+value+"\"}");
+      int httpCode2 = http.POST((String)"{\"key\":\"firstESP\",\"name\":\""+name+"\",\"value\":\""+value+"\"}");
         if(httpCode2 == HTTP_CODE_OK) {
           String payload = http.getString(); 
           if (payload == "record added") SD.remove(filePath);
@@ -539,6 +542,7 @@ void saveSdToDatabase(){
     }
     file = root.openNextFile();
   }
+  http.end();
 }
 
 void stepWork(){
