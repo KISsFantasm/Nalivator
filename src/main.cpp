@@ -8,7 +8,8 @@
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
   #include <ESP8266mDNS.h>
-  #include <FS.h>
+  #include <ESP8266HTTPClient.h>
+  // #include <FS.h>
   #include <ArduinoOTA.h>
 #else
   #include <ESPmDNS.h>
@@ -23,18 +24,30 @@
 #include <EEPROM.h>
 #include "string"
 
+#include "FS.h"
+#include "SPI.h"
+#include "SD.h"
+
 #ifndef ESP8266
-  #include "SDExplorer.h"
+  #include <HTTPClient.h>
 #endif
 
+HTTPClient http;
+WiFiClient client; 
+
+const char *HOST_NAME = "http://192.168.10.13:81";
+const char *PATH_NAME = "/fantasm/esp/server.php";
+
 #include "time.h"
-struct tm timeinfo;
+time_t rawtime; 
+struct tm* timeinfo; 
 
 const char* http_username[] = {"admin","operator","guest"};
 const char* http_password[] = {"adminesp","55555",""};
 
 //Timer
 GTimer readTimer(MS, 750);
+GTimer databaseTimer(MS, 20000);
 
 // Modbus Hreg Offset
 const int REG = 0;               
@@ -104,30 +117,51 @@ void inline writeMemStruct(){
 }
 
 void delFromSD(){
-  #ifndef ESP8266
-    char recordSrc[50];
-    ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
-    deleteFile(SD, recordSrc);
-    delay(1500);
-  #endif
+  char filePath[50];
+  ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(filePath,50);
+  SD.remove(filePath);
+  // deleteFile(SD, filePath);
+  ((String)"/toDatabase/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(filePath,50);
+  SD.remove(filePath);
+  // deleteFile(SD, filePath);
+  delay(500);
 }
-
 void inline writeToSD() {
-  #ifndef ESP8266
-    char recordSrc[50];
-    char recordValue[10];
-    uint32_t val;
-    switch(res[24]){
-      case 0 : val = ((uint32_t)res[3] << 16) | res[2]; break;
-      case 1 : val = ((uint32_t)res[5] << 16) | res[4]; break;
-      case 2 : val = ((uint32_t)res[7] << 16) | res[6]; break;
-      case 3 : val = ((uint32_t)res[9] << 16) | res[8]; break;    
-    }
-    ((String)val+" ").toCharArray(recordValue,10);
-    ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
-    appendFile(SD,recordSrc,recordValue);
-    delay(1500);
+  char recordSrc[50];
+  char recordValue[15];
+  uint32_t val = 0;
+  File file;
+  switch(res[24]){
+    case 0 : val = ((uint32_t)res[3] << 16) | res[2]; break;
+    case 1 : val = ((uint32_t)res[5] << 16) | res[4]; break;
+    case 2 : val = ((uint32_t)res[7] << 16) | res[6]; break;
+    case 3 : val = ((uint32_t)res[9] << 16) | res[8]; break;    
+  }
+  ((String)val+" ").toCharArray(recordValue,15);
+  ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
+  
+  #ifdef ESP8266 
+    file = SD.open(recordSrc, sdfat::O_APPEND);
+  #else
+    file = SD.open(recordSrc, FILE_APPEND);
   #endif
+
+  if(file) file.print(recordValue);
+  file.close();
+  delay(500);
+
+  ((String)"/toDatabase/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
+
+  #ifdef ESP8266 
+    file = SD.open(recordSrc, sdfat::O_APPEND);
+  #else
+    file = SD.open(recordSrc, FILE_APPEND);
+  #endif
+
+  if(file) file.print(recordValue);
+  file.close();
+  delay(500);
+
 }
 
 StaticJsonDocument<512> jsonIn;
@@ -194,7 +228,6 @@ String inline getAuthHeaderValue(String header, String value){
 bool isAuth = false;
 bool inline isAuthorized(AsyncWebServerRequest *request, bool skip = false){
   if (!skip) isAuth = false;
-  bool valid = false;
   for (short i = 0; i < (*(&http_username + 1) - http_username); i++){
     if(request->authenticate(http_username[i], http_password[i])) return true;
   }
@@ -203,11 +236,10 @@ bool inline isAuthorized(AsyncWebServerRequest *request, bool skip = false){
 
 bool inline getIOSAuth(AsyncWebServerRequest *request){
   String str;
-  bool hasAuthH = false;
-  bool hasRefH = false;
-  for (short i=0;i<request->headers();i++) {
+  // bool hasAuthH = false;
+  for (size_t i=0;i<request->headers();i++) {
     if(request->getHeader(i)->name() == "User-Agent") str = request->getHeader(i)->toString();
-    if(request->getHeader(i)->name() == "Authorization") hasAuthH = true;
+    // if(request->getHeader(i)->name() == "Authorization") hasAuthH = true;
   }
   if (str.indexOf("iPhone OS") != -1 || str.indexOf("Mac OS") != -1) {
     if (!isAuthorized(request,true)){
@@ -264,11 +296,16 @@ void setup(){
   }
   configTime(0, 0, "pool.ntp.org");
 
+  if(!SD.begin(5)){
+    Serial.println("Card Mount Failed");
+    return;
+  }
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     getIOSAuth(request);
     if (!isAuthorized(request)) {request->redirect("/LogIn"); return;}
     String userName;
-    for (short i = 0; i < request->headers(); i++) {
+    for (size_t i = 0; i < request->headers(); i++) {
       if (request->headerName(i) == "Authorization"){
         userName = getAuthHeaderValue(request->header(i), "username");
       }
@@ -282,7 +319,7 @@ void setup(){
     getIOSAuth(request);
     if (!isAuthorized(request)) {request->redirect("/LogIn"); return;}
     String userName,uri,ref;
-    for (short i = 0; i < request->headers(); i++) {
+    for (size_t i = 0; i < request->headers(); i++) {
       if (request->headerName(i) == "Authorization"){
         userName = getAuthHeaderValue(request->header(i), "username");
         uri = getAuthHeaderValue(request->header(i), "uri");
@@ -313,7 +350,7 @@ void setup(){
 
     String userName;
     bool auth = false;
-    for (short i = 0; i < request->headers(); i++) {
+    for (size_t i = 0; i < request->headers(); i++) {
       if (request->headerName(i) == "Authorization"){
         auth = true;
         userName = getAuthHeaderValue(request->header(i), "username");
@@ -419,9 +456,9 @@ void setup(){
       AsyncWebParameter *par = request->getParam(i);
       if (par->name() == "src" ) {
         AsyncResponseStream *response = request->beginResponseStream("text/html");
-        char fileName[50];
-        ((String)"/nalivator/"+par->value()).toCharArray(fileName,50);
-        File file = SD.open(fileName);
+        char filePath[50];
+        ((String)"/nalivator/"+par->value()).toCharArray(filePath,50);
+        File file = SD.open(filePath);
         if(!file){request->send(404); return;}
         while(file.available()){
           response->write(file.read());
@@ -468,47 +505,59 @@ void setup(){
     ArduinoOTA.begin();
   #endif
   // Start server
+  http.begin(client,(String)HOST_NAME + PATH_NAME);
   server.begin();
   mb.client();
+}
 
-  #ifndef ESP8266
-    if(!SD.begin(5)){
-      Serial.println("Card Mount Failed");
-      return;
+void saveSdToDatabase(){
+  File root = SD.open("/toDatabase");
+  File file = root.openNextFile();
+  while(file){
+    String buf = "";
+    char filePath[50];
+    ((String)"/toDatabase/"+file.name()).toCharArray(filePath,50);
+    char name[36];
+    ((String)file.name()).toCharArray(name, 36);
+
+    int httpCode = http.POST((String)"{\"name\":\""+name+"\"}");
+    if(httpCode == HTTP_CODE_OK) {
+
+      File file2 = SD.open(filePath);
+      if(!file2) return;
+      while(file2.available()){ buf += (char)file2.read(); }
+      file2.close();
+      char value[buf.length()];
+      buf.toCharArray(value,buf.length()+1);
+
+      int httpCode2 = http.POST((String)"{\"name\":\""+name+"\",\"value\":\""+value+"\"}");
+        if(httpCode2 == HTTP_CODE_OK) {
+          String payload = http.getString(); 
+          if (payload == "record added") SD.remove(filePath);
+          Serial.println(payload);
+        }
     }
-
-    uint8_t cardType = SD.cardType();
-
-    if(cardType == CARD_NONE){
-      Serial.println("No SD card attached");
-      return;
-    }
-
-    Serial.print("SD Card Type: ");
-    if(cardType == CARD_MMC){
-      Serial.println("MMC");
-    } else if(cardType == CARD_SD){
-      Serial.println("SDSC");
-    } else if(cardType == CARD_SDHC){
-      Serial.println("SDHC");
-    } else {
-      Serial.println("UNKNOWN");
-    }
-
-  #endif
+    file = root.openNextFile();
+  }
 }
 
 void stepWork(){
   if (memParam.stepMem == 11 && res[0] != 11){
     writeToSD();
   }
+  
   if (memParam.stepMem == 6 && res[0] != 6){
-    if (getLocalTime(&timeinfo)){
-      strftime(memParam.date,20,"%d-%m-%Y_%H-%M-%S",&timeinfo);
-    } else {
+    time(&rawtime);
+    char expVal[5];
+    timeinfo = localtime(&rawtime);
+    strftime(expVal,5,"%Y",timeinfo);
+    if (expVal[0] == '1' && expVal[1] == '9' && expVal[2] == '7' && expVal[3] == '0'){
       for(short i = 0; i < 20; i++) memParam.date[i] = clientDate[i];
+    } else {
+      strftime(memParam.date,20,"%d-%m-%Y_%H-%M-%S",timeinfo);
     }
   }
+  if (res[0] < 10 && res[0] != 0 && databaseTimer.isReady()) saveSdToDatabase();
   if (memParam.stepMem != res[0]){
     memParam.stepMem = res[0];
     writeMemStruct();
@@ -526,6 +575,7 @@ bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbu
       mb.dropTransactions();              // Cancel all waiting transactions
     }
   }
+  
   stepWork();
   return true;
 }
@@ -543,7 +593,5 @@ void loop(){
       mb.connect(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]));
     }
     mb.task();
-    // Serial.println((String)ESP.getFreeHeap());
   }
-
 }

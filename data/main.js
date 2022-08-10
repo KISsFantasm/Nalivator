@@ -456,16 +456,16 @@ function getRecordData(){
 function parseChartData(resp){
     let records = resp.split('/');
     for(let i in records){
-    // 0 - date, 1 - time, 2 - car, 3 - section
-    let record = records[i];
-    if (record == "") continue;
-    let data = record.split('_');
-    data[3] = data[3].split('.')[0];
-    if (data[0] == undefined || data[1] == undefined || data[2] == undefined || data[3] == undefined) {chartData = {}; return;}
-    let date = data[0] + "_" + data[1];
-    if (!chartData[data[2]]) chartData[data[2]] = {};
-    if (!chartData[data[2]][data[3]]) chartData[data[2]][data[3]] = {};
-    chartData[data[2]][data[3]][date] = true;
+        let record = records[i];
+        if (record == "") continue;
+        // 0 - date, 1 - time, 2 - car, 3 - section
+        let data = record.split('_');
+        data[3] = data[3].split('.')[0];
+        if (data[0] == undefined || data[1] == undefined || data[2] == undefined || data[3] == undefined) {chartData = {}; return;}
+        let date = data[0] + "_" + data[1];
+        if (!chartData[data[2]]) chartData[data[2]] = {};
+        if (!chartData[data[2]][data[3]]) chartData[data[2]][data[3]] = {};
+        chartData[data[2]][data[3]][date] = true;
     }
     for(let car in chartData) createOption(chartCar,car);
     if (chartRefresh) reloadChartData();
