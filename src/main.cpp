@@ -48,7 +48,7 @@ const char* http_password[] = {"adminesp","55555",""};
 
 //Timer
 GTimer readTimer(MS, 750);
-GTimer databaseTimer(MS, 20000);
+GTimer databaseTimer(MS, 60000);
 
 // Modbus Hreg Offset
 const int REG = 0;               
@@ -561,7 +561,7 @@ void stepWork(){
       strftime(memParam.date,20,"%d-%m-%Y_%H-%M-%S",timeinfo);
     }
   }
-  if (res[0] < 10 && res[0] != 0 && databaseTimer.isReady()) saveSdToDatabase();
+  if (res[0] == 0 && databaseTimer.isReady()) saveSdToDatabase();
   if (memParam.stepMem != res[0]){
     memParam.stepMem = res[0];
     writeMemStruct();
@@ -571,17 +571,20 @@ void stepWork(){
 bool cb(Modbus::ResultCode event, uint16_t transactionId, void* data) { // Modbus Transaction callback
   if (event != Modbus::EX_SUCCESS) { // If transaction got an error
     // Serial.printf("Modbus result: %02X\n", event);  // Display Modbus error code
-  } else {drops = 0;}
+  } else {
+    drops = 0;
+    stepWork();
+    return true;
+  }
   if (event == Modbus::EX_TIMEOUT) {    // If Transaction timeout took place
     drops++;
     if (drops >= 5) {
       mb.disconnect(IPAddress(memParam.remote[0],memParam.remote[1],memParam.remote[2],memParam.remote[3]));              // Close connection to slave and
       mb.dropTransactions();              // Cancel all waiting transactions
+
     }
   }
-  
-  stepWork();
-  return true;
+  return false;
 }
     
 void loop(){
