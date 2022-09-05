@@ -8,6 +8,7 @@
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
   #include <ESP8266mDNS.h>
+
   #include <ESP8266HTTPClient.h>
   // #include <FS.h>
   #include <ArduinoOTA.h>
@@ -37,7 +38,7 @@ WiFiClient client;
 
 const char *HOST_NAME = "192.168.10.13";
 uint16_t HOSP_PORT = 81;
-const char *PATH_NAME = "/fantasm/esp/server.php";
+const char *PATH_NAME = "/calemeam/Nalivator.php";
 
 #include "time.h"
 time_t rawtime; 
@@ -51,7 +52,7 @@ GTimer readTimer(MS, 750);
 GTimer databaseTimer(MS, 60000);
 
 // Modbus Hreg Offset
-const int REG = 0;               
+const int REG = 0;
 
 ModbusIP mb;  //ModbusIP object
 // Create AsyncWebServer object on port 80
@@ -129,6 +130,7 @@ void delFromSD(){
   // deleteFile(SD, filePath);
   delay(500);
 }
+
 void inline writeToSD() {
   char recordSrc[50];
   char recordValue[15];
@@ -144,7 +146,7 @@ void inline writeToSD() {
   ((String)"/nalivator/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
   
   #ifdef ESP8266 
-    file = SD.open(recordSrc, sdfat::O_APPEND);
+    file = SD.open(recordSrc, FILE_WRITE);
   #else
     file = SD.open(recordSrc, FILE_APPEND);
   #endif
@@ -156,7 +158,7 @@ void inline writeToSD() {
   ((String)"/toDatabase/" + memParam.date + "_" + memParam.carN +"_" + memParam.carS + ".txt").toCharArray(recordSrc,50);
 
   #ifdef ESP8266 
-    file = SD.open(recordSrc, sdfat::O_APPEND);
+    file = SD.open(recordSrc, FILE_WRITE);
   #else
     file = SD.open(recordSrc, FILE_APPEND);
   #endif
@@ -297,6 +299,7 @@ void setup(){
     delay(500);
     Serial.print(".");
   }
+  Serial.println("");
   configTime(0, 0, "pool.ntp.org");
 
   if(!SD.begin(ssSdPin)){
@@ -516,7 +519,9 @@ void saveSdToDatabase(){
   http.begin(client, HOST_NAME, HOSP_PORT, PATH_NAME, true);
   File root = SD.open("/toDatabase");
   File file = root.openNextFile();
+  Serial.println("init save to database");
   while(file){
+    Serial.print((String)file.name() + " - ");
     String buf = "";
     char filePath[50];
     ((String)"/toDatabase/"+file.name()).toCharArray(filePath,50);
