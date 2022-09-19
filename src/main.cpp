@@ -36,9 +36,9 @@
 HTTPClient http;
 WiFiClient client; 
 
-const char *HOST_NAME = "192.168.10.13";
-uint16_t HOSP_PORT = 81;
-const char *PATH_NAME = "/calemeam/Nalivator.php";
+const char *HOST_NAME = "192.168.10.100";
+uint16_t HOSP_PORT = 80;
+const char *PATH_NAME = "/Nalivator.php";
 
 #include "time.h"
 time_t rawtime; 
@@ -69,7 +69,7 @@ struct memSt {
   short stepMem = 0;
   short carS = 0;
   char carN[11] = {'X','X','0','0','0','0','X','X'};
-  short wIP[4] = {192,168,10,205};
+  short wIP[4] = {192,168,10,198};
   short wGate[4] = {192,168,10,1};
   short wMask[4] = {255,255,255,0};
   char wSsid[16] = {'A','C','S','-','W','I','F','I'};
@@ -81,7 +81,7 @@ struct memSt {
   char apPass[16] = {'e','s','p','a','d','m','i','n'};
   bool apEnable = true;
   char date[20] = {'0','0','-','0','0','-','0','0','0','0','_','0','0','-','0','0','-','0','0'};
-  short remote[4] = {192,168,10,178};
+  short remote[4] = {192,168,10,224};
   char key[1] = {'Y'};
 } memParam, defParam;
 
@@ -513,6 +513,7 @@ void setup(){
 
   server.begin();
   mb.client();
+  Serial.println("-");
 }
 
 void saveSdToDatabase(){
